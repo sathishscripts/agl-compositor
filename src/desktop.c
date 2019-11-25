@@ -1,0 +1,319 @@
+/*
+ * Copyright © 2019 Collabora, Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "ivi-compositor.h"
+
+#include <libweston-6/compositor.h>
+#include <libweston-6/libweston-desktop.h>
+
+#if 0
+static struct weston_output *
+get_default_output(struct weston_compositor *compositor)
+{
+	if (wl_list_empty(&compositor->output_list))
+		return NULL;
+
+	return wl_container_of(compositor->output_list.next,
+			       struct weston_output, link);
+}
+#endif
+
+static void
+desktop_ping_timeout(struct weston_desktop_client *dclient, void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_pong(struct weston_desktop_client *dclient, void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
+{
+	struct ivi_compositor *ivi = userdata;
+	struct weston_desktop_client *dclient;
+	struct wl_client *client;
+	struct ivi_surface *surface;
+
+	dclient = weston_desktop_surface_get_client(dsurface);
+	client = weston_desktop_client_get_client(dclient);
+
+	surface = zalloc(sizeof *surface);
+	if (!surface) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	surface->ivi = ivi;
+	surface->dsurface = dsurface;
+	surface->role = IVI_SURFACE_ROLE_NONE;
+	surface->old_geom.width = -1;
+	surface->old_geom.height = -1;
+
+	weston_desktop_surface_set_user_data(dsurface, surface);
+
+	if (ivi->shell_client.ready) {
+		ivi_set_desktop_surface(surface);
+
+		ivi_reflow_outputs(ivi);
+	} else {
+		/*
+		 * We delay creating "normal" desktop surfaces until later, to
+		 * give the shell-client an oppurtunity to set the surface as a
+		 * background/panel.
+		 */
+		wl_list_insert(&ivi->pending_surfaces, &surface->link);
+	}
+}
+
+static void
+desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
+{
+	struct ivi_surface *surface =
+		weston_desktop_surface_get_user_data(dsurface);
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+	struct ivi_compositor *ivi = surface->ivi;
+
+	/* TODO */
+	if (surface->role != IVI_SURFACE_ROLE_DESKTOP)
+		return;
+
+	if (weston_surface_is_mapped(wsurface)) {
+		weston_desktop_surface_unlink_view(surface->desktop.view);
+		weston_view_destroy(surface->desktop.view);
+		wl_list_remove(&surface->link);
+	}
+	free(surface);
+
+	ivi_reflow_outputs(ivi);
+}
+
+static void
+surface_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_geometry geom, old_geom;
+
+	old_geom = surface->old_geom;
+	geom = weston_desktop_surface_get_geometry(dsurface);
+
+	surface->old_geom = geom;
+
+	if (geom.width != old_geom.width || geom.height != old_geom.height) {
+		ivi_reflow_outputs(ivi);
+	}
+
+	//wl_list_insert(&ivi->surfaces, &surface->link);
+}
+
+static void
+background_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_output *output = surface->bg.output;
+	struct weston_output *woutput = output->output;
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+
+	if (wsurface->is_mapped)
+		return;
+
+	surface->bg.view = weston_desktop_surface_create_view(dsurface);
+
+	weston_view_set_output(surface->bg.view, woutput);
+	weston_view_set_position(surface->bg.view,
+				 woutput->x,
+				 woutput->y);
+	weston_layer_entry_insert(&ivi->background.view_list,
+				  &surface->bg.view->layer_link);
+
+	weston_view_update_transform(surface->bg.view);
+	weston_view_schedule_repaint(surface->bg.view);
+
+	wsurface->is_mapped = true;
+}
+
+static void
+panel_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_output *output = surface->bg.output;
+	struct weston_output *woutput = output->output;
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+	struct weston_geometry geom;
+	int32_t x = woutput->x;
+	int32_t y = woutput->y;
+
+	if (wsurface->is_mapped)
+		return;
+
+	surface->panel.view = weston_desktop_surface_create_view(dsurface);
+
+	geom = weston_desktop_surface_get_geometry(dsurface);
+	switch (surface->panel.edge) {
+	case AGL_SHELL_EDGE_TOP:
+		/* Do nothing */
+		break;
+	case AGL_SHELL_EDGE_BOTTOM:
+		y += woutput->height - geom.height;
+		break;
+	case AGL_SHELL_EDGE_LEFT:
+		/* Do nothing */
+		break;
+	case AGL_SHELL_EDGE_RIGHT:
+		x += woutput->width - geom.width;
+		break;
+	}
+
+	weston_view_set_output(surface->panel.view, woutput);
+	weston_view_set_position(surface->panel.view, x, y);
+	weston_layer_entry_insert(&ivi->normal.view_list,
+				  &surface->panel.view->layer_link);
+
+	weston_view_update_transform(surface->panel.view);
+	weston_view_schedule_repaint(surface->panel.view);
+
+	wsurface->is_mapped = true;
+}
+
+static void
+desktop_committed(struct weston_desktop_surface *dsurface, 
+		  int32_t sx, int32_t sy, void *userdata)
+{
+	struct ivi_surface *surface =
+		weston_desktop_surface_get_user_data(dsurface);
+
+	weston_compositor_schedule_repaint(surface->ivi->compositor);
+
+	switch (surface->role) {
+	case IVI_SURFACE_ROLE_NONE:
+		break;
+	case IVI_SURFACE_ROLE_DESKTOP:
+		surface_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_BACKGROUND:
+		background_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_PANEL:
+		panel_committed(surface);
+		break;
+	}
+}
+
+static void
+desktop_show_window_menu(struct weston_desktop_surface *dsurface,
+			 struct weston_seat *seat, int32_t x, int32_t y,
+			 void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_set_parent(struct weston_desktop_surface *dsurface,
+		   struct weston_desktop_surface *parent, void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_move(struct weston_desktop_surface *dsurface,
+	     struct weston_seat *seat, uint32_t serial, void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_resize(struct weston_desktop_surface *dsurface,
+	       struct weston_seat *seat, uint32_t serial,
+	       enum weston_desktop_surface_edge edges, void *user_data)
+{
+	/* not supported */
+}
+
+static void
+desktop_fullscreen_requested(struct weston_desktop_surface *dsurface,
+			     bool fullscreen, struct weston_output *output,
+			     void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_maximized_requested(struct weston_desktop_surface *dsurface,
+			    bool maximized, void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_minimized_requested(struct weston_desktop_surface *dsurface,
+			    void *userdata)
+{
+	/* not supported */
+}
+
+static void
+desktop_set_xwayland_position(struct weston_desktop_surface *dsurface,
+			      int32_t x, int32_t y, void *userdata)
+{
+	/* not supported */
+}
+
+static const struct weston_desktop_api desktop_api = {
+	.struct_size = sizeof desktop_api,
+	.ping_timeout = desktop_ping_timeout,
+	.pong = desktop_pong,
+	.surface_added = desktop_surface_added,
+	.surface_removed = desktop_surface_removed,
+	.committed = desktop_committed,
+	.show_window_menu = desktop_show_window_menu,
+	.set_parent = desktop_set_parent,
+	.move = desktop_move,
+	.resize = desktop_resize,
+	.fullscreen_requested = desktop_fullscreen_requested,
+	.maximized_requested = desktop_maximized_requested,
+	.minimized_requested = desktop_minimized_requested,
+	.set_xwayland_position = desktop_set_xwayland_position,
+};
+
+int
+ivi_desktop_init(struct ivi_compositor *ivi)
+{
+	ivi->desktop = weston_desktop_create(ivi->compositor, &desktop_api, ivi);
+	if (!ivi->desktop) {
+		weston_log("Failed to create desktop globals");
+		return -1;
+	}
+
+	return 0;
+}
