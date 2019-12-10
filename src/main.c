@@ -114,15 +114,6 @@ ivi_ensure_output(struct ivi_compositor *ivi, char *name,
 	return output;
 }
 
-static void
-ivi_output_destroy(struct ivi_output *output)
-{
-	weston_output_destroy(output->output);
-	free(output->name);
-	wl_list_remove(&output->link);
-	free(output);
-}
-
 static int
 count_heads(struct weston_output *output)
 {
@@ -421,7 +412,6 @@ head_disable(struct ivi_compositor *ivi, struct weston_head *head)
 
 	weston_head_detach(head);
 	if (count_heads(ivi_output->output) == 0) {
-		ivi_output_destroy(ivi_output);
 		weston_output_disable(ivi_output->output);
 	}
 }
@@ -865,7 +855,7 @@ activate_binding(struct weston_seat *seat,
 	struct ivi_surface *surface;
 
 	surface = to_ivi_surface(main_surface);
-	if (!surface || surface->role != IVI_SURFACE_ROLE_DESKTOP)
+	if (!surface)
 		return;
 
 	weston_seat_set_keyboard_focus(seat, focus);
@@ -938,14 +928,6 @@ static bool
 global_filter(const struct wl_client *client, const struct wl_global *global,
 	      void *data)
 {
-#if 0
-	struct ivi_compositor *ivi = data;
-	const struct wl_interface *iface = wl_global_get_interface(global);
-
-	if (iface == &agl_shell_interface)
-		return client == ivi->shell_client.client;
-#endif
-
 	return true;
 }
 
@@ -1136,7 +1118,6 @@ int main(int argc, char *argv[])
 
 	wl_list_init(&ivi.outputs);
 	wl_list_init(&ivi.surfaces);
-	wl_list_init(&ivi.shell_clients);
 	wl_list_init(&ivi.pending_surfaces);
 
 	/* Prevent any clients we spawn getting our stdin */
@@ -1184,24 +1165,11 @@ int main(int argc, char *argv[])
 		if (!signals[i])
 			goto error_signals;
 
-#if 0
-	log_ctx = weston_log_ctx_compositor_create();
-	if (!log_ctx) {
-		weston_log("Failed to initialize weston debug framework.\n");
-		goto error_signals;
-	}
-#endif
-
 	ivi.compositor = weston_compositor_create(display, &ivi);
 	if (!ivi.compositor) {
 		weston_log("fatal: failed to create compositor.\n");
 		goto error_signals;
 	}
-
-#if 0
-	if (debug_protocol)
-		weston_compositor_enable_debug_protocol(ivi.compositor);
-#endif
 
 	if (compositor_init_config(ivi.compositor, ivi.config) < 0)
 		goto error_compositor;

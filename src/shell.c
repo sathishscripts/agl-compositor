@@ -49,133 +49,17 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 	wl_list_insert(&surface->ivi->surfaces, &surface->link);
 }
 
-/* TODO: Replace this with some callback or similar, to have
- * adjustable window management policy.
- */
-void
-ivi_reflow_outputs(struct ivi_compositor *ivi)
-{
-	struct ivi_surface *surface;
-	struct ivi_output *output;
-	int i = 0;
-
-	if (wl_list_empty(&ivi->outputs))
-		return;
-
-	output = wl_container_of(ivi->outputs.next, output, link);
-
-	wl_list_for_each(surface, &ivi->surfaces, link) {
-		struct weston_desktop_surface *dsurface = surface->dsurface;
-
-		int32_t w = output->area.width / 4;
-		int32_t h = output->area.height / 2;
-		int32_t x = output->output->x + output->area.x + w * (i % 4);
-		int32_t y = output->output->y + output->area.y + h * (i / 4);
-
-		if (surface->old_geom.width == -1) {
-			weston_desktop_surface_set_size(dsurface, w, h);
-			continue;
-		} else {
-			ivi_layout_set_mapped(surface);
-			ivi_layout_set_position(surface, x, y, w, h);
-		}
-
-		if (++i == 8) {
-			if (output->link.next == &ivi->outputs)
-				break;
-
-			output = wl_container_of(output->link.next,
-					         output, link);
-			i = 0;
-		}
-	}
-
-	ivi_layout_commit(ivi);
-}
-
-void
-ivi_layout_set_mapped(struct ivi_surface *surface)
-{
-	surface->pending.flags |= IVI_SURFACE_PROP_MAP;
-}
-
-void
-ivi_layout_set_position(struct ivi_surface *surface,
-			int32_t x, int32_t y,
-			int32_t width, int32_t height)
-{
-	surface->pending.flags |= IVI_SURFACE_PROP_POSITION;
-	surface->pending.x = x;
-	surface->pending.y = y;
-	surface->pending.width = width;
-	surface->pending.height = height;
-}
-
-void
-ivi_layout_commit(struct ivi_compositor *ivi)
-{
-	struct ivi_surface *surface;
-
-	wl_list_for_each(surface, &ivi->surfaces, link) {
-		struct weston_desktop_surface *dsurface = surface->dsurface;
-		struct weston_surface *wsurface =
-			weston_desktop_surface_get_surface(dsurface);
-		struct weston_geometry geom;
-		struct weston_view *view;
-
-		/*
-		 * TODO: Hoist view into ivi_struct. It doesn't need ot be part
-		 * of the tagged union.
-		 */
-		switch (surface->role) {
-		case IVI_SURFACE_ROLE_DESKTOP:
-			view = surface->desktop.view;
-			break;
-		case IVI_SURFACE_ROLE_BACKGROUND:
-			view = surface->bg.view;
-			break;
-		case IVI_SURFACE_ROLE_PANEL:
-			view = surface->panel.view;
-			break;
-		default:
-			continue;
-		}
-
-		if (surface->pending.flags & IVI_SURFACE_PROP_MAP) {
-			view = weston_desktop_surface_create_view(dsurface);
-			wsurface->is_mapped = true;
-
-			surface->desktop.view = view;
-			weston_layer_entry_insert(&ivi->normal.view_list,
-						  &view->layer_link);
-			weston_view_update_transform(view);
-			weston_view_set_mask_infinite(view);
-			weston_view_schedule_repaint(view);
-		}
-
-		geom = weston_desktop_surface_get_geometry(dsurface);
-
-		if (surface->pending.flags & IVI_SURFACE_PROP_POSITION) {
-			weston_desktop_surface_set_size(dsurface,
-							surface->pending.width,
-							surface->pending.height);
-			weston_view_set_position(view,
-						 surface->pending.x - geom.x,
-						 surface->pending.y - geom.y);
-		}
-
-		surface->pending.flags = 0;
-	}
-}
-
 int
 ivi_shell_init(struct ivi_compositor *ivi)
 {
+	weston_layer_init(&ivi->hidden, ivi->compositor);
 	weston_layer_init(&ivi->background, ivi->compositor);
 	weston_layer_init(&ivi->normal, ivi->compositor);
 	weston_layer_init(&ivi->panel, ivi->compositor);
 	weston_layer_init(&ivi->fullscreen, ivi->compositor);
 
+	weston_layer_set_position(&ivi->hidden,
+				  WESTON_LAYER_POSITION_HIDDEN);
 	weston_layer_set_position(&ivi->background,
 				  WESTON_LAYER_POSITION_BACKGROUND);
 	weston_layer_set_position(&ivi->normal,
@@ -298,44 +182,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	/* TODO: Create a black screen and remove it here */
 
 	wl_list_for_each(output, &ivi->outputs, link) {
-		struct weston_desktop_surface *dsurf;
-		struct weston_geometry geom;
-
-		output->area.x = 0;
-		output->area.y = 0;
-		output->area.width = output->output->width;
-		output->area.height = output->output->height;
-
-		if (output->top) {
-			dsurf = output->top->dsurface;
-			geom = weston_desktop_surface_get_geometry(dsurf);
-
-			output->area.y += geom.height;
-			output->area.height -= geom.height;
-		}
-		if (output->bottom) {
-			dsurf = output->bottom->dsurface;
-			geom = weston_desktop_surface_get_geometry(dsurf);
-
-			output->area.height -= geom.height;
-		}
-		if (output->left) {
-			dsurf = output->left->dsurface;
-			geom = weston_desktop_surface_get_geometry(dsurf);
-
-			output->area.x += geom.width;
-			output->area.width -= geom.width;
-		}
-		if (output->right) {
-			dsurf = output->right->dsurface;
-			geom = weston_desktop_surface_get_geometry(dsurf);
-
-			output->area.width -= geom.width;
-		}
-
-		weston_log("Usable area: %dx%d+%d,%d\n",
-			   output->area.width, output->area.height,
-			   output->area.x, output->area.y);
+		ivi_layout_init(ivi, output);
 	}
 
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
@@ -474,10 +321,24 @@ shell_set_panel(struct wl_client *client,
 	weston_desktop_surface_set_size(dsurface, width, height);
 }
 
+static void
+shell_activate_app(struct wl_client *client,
+		   struct wl_resource *shell_res,
+		   const char *app_id,
+		   struct wl_resource *output_res)
+{
+	struct weston_head *head = weston_head_from_resource(output_res);
+	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_output *output = to_ivi_output(woutput);
+
+	ivi_layout_activate(output, app_id);
+}
+
 static const struct agl_shell_interface agl_shell_implementation = {
 	.ready = shell_ready,
 	.set_background = shell_set_background,
 	.set_panel = shell_set_panel,
+	.activate_app = shell_activate_app,
 };
 
 static void

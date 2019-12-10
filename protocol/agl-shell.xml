@@ -96,5 +96,22 @@
       <arg name="output" type="object" interface="wl_output"/>
       <arg name="edge" type="uint" enum="edge"/>
     </request>
+
+    <request name="activate_app">
+      <description summary="make client current window">
+        Ask the compositor to make a toplevel to become the current/focused
+        window for window management purposes.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+
+        If multiple toplevels have the same app_id, the result is unspecified.
+
+        XXX: Do we need feedback to say it didn't work? (e.g. client does
+        not exist)
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
   </interface>
 </protocol>

@@ -92,6 +92,7 @@ deps_libweston = [
 srcs_agl_compositor = [
 	'src/main.c',
 	'src/desktop.c',
+	'src/layout.c',
 	'src/shell.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',

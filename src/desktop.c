@@ -69,18 +69,21 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 		return;
 	}
 
+	surface->view = weston_desktop_surface_create_view(dsurface);
+	if (!surface->view) {
+		free(surface);
+		wl_client_post_no_memory(client);
+		return;
+	}
+
 	surface->ivi = ivi;
 	surface->dsurface = dsurface;
 	surface->role = IVI_SURFACE_ROLE_NONE;
-	surface->old_geom.width = -1;
-	surface->old_geom.height = -1;
 
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
 	if (ivi->shell_client.ready) {
 		ivi_set_desktop_surface(surface);
-
-		ivi_reflow_outputs(ivi);
 	} else {
 		/*
 		 * We delay creating "normal" desktop surfaces until later, to
@@ -98,112 +101,17 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_desktop_surface_get_user_data(dsurface);
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
-	struct ivi_compositor *ivi = surface->ivi;
 
 	/* TODO */
 	if (surface->role != IVI_SURFACE_ROLE_DESKTOP)
 		return;
 
 	if (weston_surface_is_mapped(wsurface)) {
-		weston_desktop_surface_unlink_view(surface->desktop.view);
-		weston_view_destroy(surface->desktop.view);
+		weston_desktop_surface_unlink_view(surface->view);
+		weston_view_destroy(surface->view);
 		wl_list_remove(&surface->link);
 	}
 	free(surface);
-
-	ivi_reflow_outputs(ivi);
-}
-
-static void
-surface_committed(struct ivi_surface *surface)
-{
-	struct ivi_compositor *ivi = surface->ivi;
-	struct weston_desktop_surface *dsurface = surface->dsurface;
-	struct weston_geometry geom, old_geom;
-
-	old_geom = surface->old_geom;
-	geom = weston_desktop_surface_get_geometry(dsurface);
-
-	surface->old_geom = geom;
-
-	if (geom.width != old_geom.width || geom.height != old_geom.height) {
-		ivi_reflow_outputs(ivi);
-	}
-
-	//wl_list_insert(&ivi->surfaces, &surface->link);
-}
-
-static void
-background_committed(struct ivi_surface *surface)
-{
-	struct ivi_compositor *ivi = surface->ivi;
-	struct ivi_output *output = surface->bg.output;
-	struct weston_output *woutput = output->output;
-	struct weston_desktop_surface *dsurface = surface->dsurface;
-	struct weston_surface *wsurface =
-		weston_desktop_surface_get_surface(dsurface);
-
-	if (wsurface->is_mapped)
-		return;
-
-	surface->bg.view = weston_desktop_surface_create_view(dsurface);
-
-	weston_view_set_output(surface->bg.view, woutput);
-	weston_view_set_position(surface->bg.view,
-				 woutput->x,
-				 woutput->y);
-	weston_layer_entry_insert(&ivi->background.view_list,
-				  &surface->bg.view->layer_link);
-
-	weston_view_update_transform(surface->bg.view);
-	weston_view_schedule_repaint(surface->bg.view);
-
-	wsurface->is_mapped = true;
-}
-
-static void
-panel_committed(struct ivi_surface *surface)
-{
-	struct ivi_compositor *ivi = surface->ivi;
-	struct ivi_output *output = surface->bg.output;
-	struct weston_output *woutput = output->output;
-	struct weston_desktop_surface *dsurface = surface->dsurface;
-	struct weston_surface *wsurface =
-		weston_desktop_surface_get_surface(dsurface);
-	struct weston_geometry geom;
-	int32_t x = woutput->x;
-	int32_t y = woutput->y;
-
-	if (wsurface->is_mapped)
-		return;
-
-	surface->panel.view = weston_desktop_surface_create_view(dsurface);
-
-	geom = weston_desktop_surface_get_geometry(dsurface);
-	switch (surface->panel.edge) {
-	case AGL_SHELL_EDGE_TOP:
-		/* Do nothing */
-		break;
-	case AGL_SHELL_EDGE_BOTTOM:
-		y += woutput->height - geom.height;
-		break;
-	case AGL_SHELL_EDGE_LEFT:
-		/* Do nothing */
-		break;
-	case AGL_SHELL_EDGE_RIGHT:
-		x += woutput->width - geom.width;
-		break;
-	}
-
-	weston_view_set_output(surface->panel.view, woutput);
-	weston_view_set_position(surface->panel.view, x, y);
-	weston_layer_entry_insert(&ivi->normal.view_list,
-				  &surface->panel.view->layer_link);
-
-	weston_view_update_transform(surface->panel.view);
-	weston_view_schedule_repaint(surface->panel.view);
-
-	wsurface->is_mapped = true;
 }
 
 static void
@@ -212,22 +120,8 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 {
 	struct ivi_surface *surface =
 		weston_desktop_surface_get_user_data(dsurface);
-
-	weston_compositor_schedule_repaint(surface->ivi->compositor);
-
-	switch (surface->role) {
-	case IVI_SURFACE_ROLE_NONE:
-		break;
-	case IVI_SURFACE_ROLE_DESKTOP:
-		surface_committed(surface);
-		break;
-	case IVI_SURFACE_ROLE_BACKGROUND:
-		background_committed(surface);
-		break;
-	case IVI_SURFACE_ROLE_PANEL:
-		panel_committed(surface);
-		break;
-	}
+	if (surface->role == IVI_SURFACE_ROLE_DESKTOP)
+		ivi_layout_desktop_committed(surface);
 }
 
 static void

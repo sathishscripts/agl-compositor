@@ -68,18 +68,17 @@ struct ivi_compositor {
 	} shell_client;
 
 	struct wl_list outputs; /* ivi_output.link */
-	struct wl_list surfaces; /* ivi_desktop_surface.link */
+	struct wl_list surfaces; /* ivi_surface.link */
 
 	struct weston_desktop *desktop;
 
 	struct wl_list pending_surfaces;
 
+	struct weston_layer hidden;
 	struct weston_layer background;
 	struct weston_layer normal;
 	struct weston_layer panel;
 	struct weston_layer fullscreen;
-
-	struct wl_list shell_clients; /* ivi_shell_client.link */
 };
 
 struct ivi_surface;
@@ -107,8 +106,7 @@ struct ivi_output {
 	 */
 	struct weston_geometry area;
 
-	//int32_t width;
-	//int32_t height;
+	struct ivi_surface *active;
 
 	/* Temporary: only used during configuration */
 	size_t add_len;
@@ -123,18 +121,16 @@ enum ivi_surface_role {
 };
 
 struct ivi_desktop_surface {
-	struct weston_view *view;
+	struct ivi_output *pending_output;
 };
 
 struct ivi_background_surface {
 	struct ivi_output *output;
-	struct weston_view *view;
 };
 
 struct ivi_panel_surface {
 	struct ivi_output *output;
 	enum agl_shell_edge edge;
-	struct weston_view *view;
 };
 
 enum ivi_surface_flags {
@@ -146,6 +142,7 @@ enum ivi_surface_flags {
 struct ivi_surface {
 	struct ivi_compositor *ivi;
 	struct weston_desktop_surface *dsurface;
+	struct weston_view *view;
 
 	struct wl_list link;
 
@@ -154,8 +151,6 @@ struct ivi_surface {
 		int32_t x, y;
 		int32_t width, height;
 	} pending;
-
-	struct weston_geometry old_geom;
 
 	enum ivi_surface_role role;
 	union {
@@ -216,5 +211,14 @@ ivi_layout_set_position(struct ivi_surface *surface,
 
 void
 ivi_layout_commit(struct ivi_compositor *ivi);
+
+void
+ivi_layout_init(struct ivi_compositor *ivi, struct ivi_output *output);
+
+void
+ivi_layout_activate(struct ivi_output *output, const char *app_id);
+
+void
+ivi_layout_desktop_committed(struct ivi_surface *surf);
 
 #endif
