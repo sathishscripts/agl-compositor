@@ -31,6 +31,8 @@
 #include <libweston-6/compositor.h>
 #include <libweston-6/libweston-desktop.h>
 
+#define AGL_COMP_DEBUG
+
 static void
 ivi_background_init(struct ivi_compositor *ivi, struct ivi_output *output)
 {
@@ -49,6 +51,11 @@ ivi_background_init(struct ivi_compositor *ivi, struct ivi_output *output)
 
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, woutput->x, woutput->y);
+
+#ifdef AGL_COMP_DEBUG
+	weston_log("(background) position view %p, x %d, y %d\n", view,
+			woutput->x, woutput->y);
+#endif
 
 	view->is_mapped = true;
 	view->surface->is_mapped = true;
@@ -74,7 +81,10 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 	dsurface = panel->dsurface;
 	view = panel->view;
 	geom = weston_desktop_surface_get_geometry(dsurface);
-
+#ifdef AGL_COMP_DEBUG
+	weston_log("geom.width %d, geom.height %d, geom.x %d, geom.y %d\n",
+			geom.width, geom.height, geom.x, geom.y);
+#endif
 	switch (panel->panel.edge) {
 	case AGL_SHELL_EDGE_TOP:
 		output->area.y += geom.height;
@@ -99,6 +109,10 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, x, y);
+#ifdef AGL_COMP_DEBUG
+	weston_log("(panel) edge %d position view %p, x %d, y %d\n",
+			panel->panel.edge, view, x, y);
+#endif
 
 	view->is_mapped = true;
 	view->surface->is_mapped = true;
@@ -214,9 +228,9 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	surf = ivi_find_app(ivi, app_id);
 	if (!surf)
 		return;
-
+#ifdef AGL_COMP_DEBUG
 	weston_log("Found app_id %s\n", app_id);
-
+#endif
 	if (surf == output->active)
 		return;
 
