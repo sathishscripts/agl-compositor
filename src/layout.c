@@ -191,7 +191,8 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 	weston_view_update_transform(view);
 
-	weston_view_schedule_repaint(view);
+	/* force repaint of the entire output */
+	weston_output_damage(output->output);
 	surf->desktop.pending_output = NULL;
 }
 
@@ -261,7 +262,8 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 
 		weston_view_set_output(view, output->output);
 		weston_layer_entry_insert(&ivi->hidden.view_list, &view->layer_link);
-		weston_view_schedule_repaint(view);
+		/* force repaint of the entire output */
+		weston_output_damage(output->output);
 	}
 
 	surf->desktop.pending_output = output;
