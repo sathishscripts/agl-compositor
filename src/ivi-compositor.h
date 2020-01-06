@@ -27,6 +27,7 @@
 #define IVI_COMPOSITOR_H
 
 #include <stdbool.h>
+#include "config.h"
 
 #include <libweston-6/compositor-drm.h>
 #include <libweston-6/compositor.h>
@@ -173,6 +174,16 @@ struct ivi_shell_client {
 
 struct ivi_compositor *
 to_ivi_compositor(struct weston_compositor *ec);
+
+#ifdef HAVE_SYSTEMD
+int
+ivi_agl_systemd_notify(struct ivi_compositor *ivi);
+#else
+static int
+ivi_agl_systemd_notify(struct ivi_compositor *ivi)
+{
+}
+#endif
 
 int
 ivi_shell_init(struct ivi_compositor *ivi);

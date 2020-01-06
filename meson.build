@@ -9,6 +9,8 @@ project('agl-compositor',
   license: 'MIT/Expat',
 )
 
+config_h = configuration_data()
+
 cc = meson.get_compiler('c')
 add_project_arguments(
   cc.get_supported_arguments([
@@ -33,6 +35,7 @@ foreach func: optional_libc_funcs
     endif
 endforeach
 
+dep_libsystemd = dependency('libsystemd', required: false)
 dep_scanner = dependency('wayland-scanner', native: true)
 prog_scanner = find_program(dep_scanner.get_pkgconfig_variable('wayland_scanner'))
 dep_wp = dependency('wayland-protocols', version: '>= 1.12')
@@ -100,6 +103,17 @@ srcs_agl_compositor = [
 	agl_shell_protocol_c,
 	xdg_shell_protocol_c,
 ]
+
+if dep_libsystemd.found()
+  config_h.set('HAVE_SYSTEMD', 1)
+
+  srcs_agl_compositor += 'src/systemd-notify.c'
+  deps_libweston += dep_libsystemd
+
+  message('Found systemd, enabling notify support')
+endif
+
+configure_file(output: 'config.h', configuration: config_h)
 
 exe_agl_compositor = executable(
 	'agl-compositor',
