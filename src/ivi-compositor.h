@@ -63,6 +63,10 @@ struct ivi_compositor {
 
 	struct wl_global *agl_shell;
 	struct {
+		int activate_apps_by_default;	/* switches once xdg top level has been 'created' */
+	} quirks;
+
+	struct {
 		struct wl_client *client;
 		struct wl_resource *resource;
 		bool ready;

@@ -196,6 +196,20 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	surf->desktop.pending_output = NULL;
 }
 
+static struct ivi_output *
+ivi_layout_find_bg_output(struct ivi_compositor *ivi)
+{
+	struct ivi_output *out;
+
+	wl_list_for_each(out, &ivi->outputs, link) {
+		if (out->background &&
+		    out->background->role == IVI_SURFACE_ROLE_BACKGROUND)
+			return out;
+	}
+
+	return NULL;
+}
+
 void
 ivi_layout_desktop_committed(struct ivi_surface *surf)
 {
@@ -206,8 +220,27 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP);
 
 	output = surf->desktop.pending_output;
-	if (!output)
+	if (!output) {
+		struct ivi_output *ivi_bg_output;
+
+		/* FIXME: This should be changed to determine if the policy
+		 * database allows that to happen */
+		if (!surf->ivi->quirks.activate_apps_by_default)
+			return;
+
+		ivi_bg_output = ivi_layout_find_bg_output(surf->ivi);
+
+		/* use the output of the bg to activate the app on start-up by
+		 * default */
+		if (surf->view && ivi_bg_output) {
+			const char *app_id =
+				weston_desktop_surface_get_app_id(dsurf);
+			if (app_id && ivi_bg_output)
+				ivi_layout_activate(ivi_bg_output, app_id);
+		}
+
 		return;
+	}
 
 	if (!weston_desktop_surface_get_maximized(dsurf) ||
 	    geom.width != output->area.width ||
