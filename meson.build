@@ -88,10 +88,23 @@ foreach proto: protocols
     endforeach
 endforeach
 
+# libweston-6 pkg-config file already has 'libweston-6' as prefix but
+# agl-compositor uses 'libweston-6' also. This makes use of the prefix
+# path as to allow building and installing the compositor locally
+prefix_path = get_option('prefix')
+message('prefix_path ' + prefix_path)
+if not prefix_path.contains('/usr')
+  additional_include_dir = include_directories(prefix_path + '/' + 'include')
+  local_dep = declare_dependency(include_directories: additional_include_dir)
+else
+  local_dep = []
+endif
+
 deps_libweston = [
   dependency('wayland-server'),
   dependency('libweston-6'),
   dependency('libweston-desktop-6'),
+  local_dep,
 ]
 
 srcs_agl_compositor = [
