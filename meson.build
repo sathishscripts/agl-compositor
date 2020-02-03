@@ -16,6 +16,8 @@ add_project_arguments(
   cc.get_supported_arguments([
     '-Wno-unused-parameter',
     '-Wno-pedantic',
+    '-Wextra',
+    '-Werror'
   ]),
   language: 'c'
 )
