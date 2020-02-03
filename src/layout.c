@@ -114,9 +114,28 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 			panel->panel.edge, view, x, y);
 #endif
 
+	/* this is necessary for cases we already mapped it desktop_committed()
+	 * but we not running the older qtwayland, so we still have a chance
+	 * for this to run at the next test */
+	if (view->surface->is_mapped) {
+		weston_layer_entry_remove(&view->layer_link);
+
+		view->is_mapped = false;
+		view->surface->is_mapped = false;
+	}
+
+	/* give ivi_layout_panel_committed() a chance to map the view/surface
+	 * instead */
+	if ((geom.width == geom.height && geom.width == 0) &&
+	    (geom.x == geom.y && geom.x == 0) &&
+	    panel->panel.edge != AGL_SHELL_EDGE_TOP)
+		return;
+
 	view->is_mapped = true;
 	view->surface->is_mapped = true;
-
+#ifdef AGL_COMP_DEBUG
+	weston_log("panel type %d inited\n", panel->panel.edge);
+#endif
 	weston_layer_entry_insert(&ivi->panel.view_list, &view->layer_link);
 }
 
@@ -248,6 +267,73 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		return;
 
 	ivi_layout_activate_complete(output, surf);
+}
+
+void
+ivi_layout_panel_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_output *output = surface->bg.output;
+	struct weston_output *woutput = output->output;
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+	struct weston_geometry geom;
+	int x = woutput->x;
+	int y = woutput->y;
+
+	assert(surface->role == IVI_SURFACE_ROLE_PANEL);
+
+	/*
+	 * If the desktop_surface geometry is not set and the panel is not a
+	 * top one, we'll give this a chance to run, as some qtwayland version
+	 * seem to have a 'problem', where the panel initilization part will
+	 * have a desktop surface with 0 as geometry for *all* its members
+	 * (width/height). Doing that will result in the panel not being
+	 * displayed at all.
+	 *
+	 * Later versions of qtwayland do have the correct window geometry for
+	 * the desktop surface so the weston_surface is already mapped in
+	 * ivi_panel_init().
+	 */
+	if (wsurface->is_mapped)
+		return;
+
+	geom = weston_desktop_surface_get_geometry(dsurface);
+
+#ifdef AGL_COMP_DEBUG
+	weston_log("geom.width %d, geom.height %d, geom.x %d, geom.y %d\n",
+			geom.width, geom.height, geom.x, geom.y);
+#endif
+
+	switch (surface->panel.edge) {
+	case AGL_SHELL_EDGE_TOP:
+		/* Do nothing */
+		break;
+	case AGL_SHELL_EDGE_BOTTOM:
+		y += woutput->height - geom.height;
+		break;
+	case AGL_SHELL_EDGE_LEFT:
+		/* Do nothing */
+		break;
+	case AGL_SHELL_EDGE_RIGHT:
+		x += woutput->width - geom.width;
+		break;
+	}
+#ifndef AGL_COMP_DEBUG
+	weston_log("panel type %d commited\n", surface->panel.edge);
+#endif
+
+	weston_view_set_output(surface->view, woutput);
+	weston_view_set_position(surface->view, x, y);
+	weston_layer_entry_insert(&ivi->panel.view_list,
+				  &surface->view->layer_link);
+
+	weston_view_update_transform(surface->view);
+	weston_view_schedule_repaint(surface->view);
+
+	wsurface->is_mapped = true;
+	surface->view->is_mapped = true;
 }
 
 void

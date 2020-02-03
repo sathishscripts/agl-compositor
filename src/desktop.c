@@ -120,8 +120,20 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 {
 	struct ivi_surface *surface =
 		weston_desktop_surface_get_user_data(dsurface);
-	if (surface->role == IVI_SURFACE_ROLE_DESKTOP)
+	weston_compositor_schedule_repaint(surface->ivi->compositor);
+
+	switch (surface->role) {
+	case IVI_SURFACE_ROLE_DESKTOP:
 		ivi_layout_desktop_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_PANEL:
+		ivi_layout_panel_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_NONE:
+	case IVI_SURFACE_ROLE_BACKGROUND:
+	default: /* fall through */
+		break;
+	}
 }
 
 static void
