@@ -1105,7 +1105,7 @@ ivi_compositor_get_quirks(struct ivi_compositor *ivi)
 int main(int argc, char *argv[])
 {
 	struct ivi_compositor ivi = { 0 };
-	struct wl_display *display;
+	struct wl_display *display = NULL;
 	struct wl_event_loop *loop;
 	struct wl_event_source *signals[3] = { 0 };
 	struct weston_config_section *section;
