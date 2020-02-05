@@ -212,6 +212,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 	/* force repaint of the entire output */
 	weston_output_damage(output->output);
+	surf->desktop.last_output = surf->desktop.pending_output;
 	surf->desktop.pending_output = NULL;
 }
 

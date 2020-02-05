@@ -127,6 +127,7 @@ enum ivi_surface_role {
 
 struct ivi_desktop_surface {
 	struct ivi_output *pending_output;
+	struct ivi_output *last_output;
 };
 
 struct ivi_background_surface {

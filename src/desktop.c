@@ -102,15 +102,26 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 
+	struct ivi_output *output = surface->desktop.last_output;
+
 	/* TODO */
 	if (surface->role != IVI_SURFACE_ROLE_DESKTOP)
 		return;
 
+	/* reset the active surface as well */
+	if (output && output->active) {
+		output->active->view->is_mapped = false;
+		output->active->view->surface->is_mapped = false;
+
+		weston_layer_entry_remove(&output->active->view->layer_link);
+		output->active = NULL;
+	}
 	if (weston_surface_is_mapped(wsurface)) {
 		weston_desktop_surface_unlink_view(surface->view);
 		weston_view_destroy(surface->view);
 		wl_list_remove(&surface->link);
 	}
+
 	free(surface);
 }
 
