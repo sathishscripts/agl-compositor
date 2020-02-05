@@ -344,6 +344,53 @@ static const struct agl_shell_interface agl_shell_implementation = {
 static void
 unbind_agl_shell(struct wl_resource *resource)
 {
+	struct ivi_compositor *ivi;
+	struct ivi_output *output;
+	struct ivi_surface *surf, *surf_tmp;
+
+	ivi = wl_resource_get_user_data(resource);
+	wl_list_for_each(output, &ivi->outputs, link) {
+		free(output->background);
+		output->background = NULL;
+
+		free(output->top);
+		output->top = NULL;
+
+		free(output->bottom);
+		output->bottom = NULL;
+
+		free(output->left);
+		output->left = NULL;
+
+		free(output->right);
+		output->right = NULL;
+
+		/* reset the active surf if there's one present */
+		if (output->active) {
+			output->active->view->is_mapped = false;
+			output->active->view->surface->is_mapped = false;
+
+			weston_layer_entry_remove(&output->active->view->layer_link);
+			output->active = NULL;
+		}
+	}
+
+	wl_list_for_each_safe(surf, surf_tmp, &ivi->surfaces, link) {
+		wl_list_remove(&surf->link);
+		wl_list_init(&surf->link);
+	}
+
+	wl_list_for_each_safe(surf, surf_tmp, &ivi->pending_surfaces, link) {
+		wl_list_remove(&surf->link);
+		wl_list_init(&surf->link);
+	}
+
+	wl_list_init(&ivi->surfaces);
+	wl_list_init(&ivi->pending_surfaces);
+
+	ivi->shell_client.ready = false;
+	ivi->shell_client.resource = NULL;
+	ivi->shell_client.client = NULL;
 }
 
 static void
