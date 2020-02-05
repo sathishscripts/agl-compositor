@@ -119,9 +119,9 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	if (weston_surface_is_mapped(wsurface)) {
 		weston_desktop_surface_unlink_view(surface->view);
 		weston_view_destroy(surface->view);
-		wl_list_remove(&surface->link);
 	}
 
+	wl_list_remove(&surface->link);
 	free(surface);
 }
 
