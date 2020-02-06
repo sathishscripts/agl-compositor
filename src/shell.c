@@ -40,6 +40,12 @@
 
 #include "agl-shell-server-protocol.h"
 
+static void
+create_black_surface_view(struct ivi_output *output);
+
+static void
+insert_black_surface(struct ivi_output *output);
+
 void
 ivi_set_desktop_surface(struct ivi_surface *surface)
 {
@@ -47,6 +53,17 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 
 	surface->role = IVI_SURFACE_ROLE_DESKTOP;
 	wl_list_insert(&surface->ivi->surfaces, &surface->link);
+}
+
+void
+ivi_shell_init_black_fs(struct ivi_compositor *ivi)
+{
+	struct ivi_output *out;
+
+	wl_list_for_each(out, &ivi->outputs, link) {
+		create_black_surface_view(out);
+		insert_black_surface(out);
+	}
 }
 
 int
@@ -168,6 +185,87 @@ ivi_launch_shell_client(struct ivi_compositor *ivi)
 }
 
 static void
+destroy_black_view(struct wl_listener *listener, void *data)
+{
+	struct fullscreen_view *fs =
+		wl_container_of(listener, fs, fs_destroy);
+
+
+	if (fs && fs->fs) {
+		if (fs->fs->view && fs->fs->view->surface) {
+			weston_surface_destroy(fs->fs->view->surface);
+			fs->fs->view = NULL;
+		}
+
+		free(fs->fs);
+		wl_list_remove(&fs->fs_destroy.link);
+	}
+}
+
+
+static void
+create_black_surface_view(struct ivi_output *output)
+{
+	struct weston_surface *surface = NULL;
+	struct weston_view *view;
+	struct ivi_compositor *ivi = output->ivi;
+	struct weston_compositor *wc= ivi->compositor;
+	struct weston_output *woutput = output->output;
+
+	surface = weston_surface_create(wc);
+	view = weston_view_create(surface);
+
+	assert(view || surface);
+
+	weston_surface_set_color(surface, 0.0, 0.0, 0.0, 1);
+	weston_surface_set_size(surface, woutput->width, woutput->height);
+	weston_view_set_position(view, woutput->x, woutput->y);
+
+	output->fullscreen_view.fs = zalloc(sizeof(struct ivi_surface));
+	output->fullscreen_view.fs->view = view;
+
+	output->fullscreen_view.fs_destroy.notify = destroy_black_view;
+	wl_signal_add(&woutput->destroy_signal,
+		      &output->fullscreen_view.fs_destroy);
+}
+
+static void
+remove_black_surface(struct ivi_output *output)
+{
+	struct weston_view *view = output->fullscreen_view.fs->view;
+
+	assert(view->is_mapped == true ||
+	       view->surface->is_mapped == true);
+
+	view->is_mapped = false;
+	view->surface->is_mapped = false;
+
+	weston_layer_entry_remove(&view->layer_link);
+	weston_view_update_transform(view);
+
+	weston_output_damage(output->output);
+}
+
+static void
+insert_black_surface(struct ivi_output *output)
+{
+	struct weston_view *view = output->fullscreen_view.fs->view;
+
+	if (view->is_mapped || view->surface->is_mapped)
+		return;
+
+	weston_layer_entry_remove(&view->layer_link);
+	weston_layer_entry_insert(&output->ivi->fullscreen.view_list,
+				  &view->layer_link);
+
+	view->is_mapped = true;
+	view->surface->is_mapped = true;
+
+	weston_view_update_transform(view);
+	weston_output_damage(output->output);
+}
+
+static void
 shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 {
 	struct ivi_compositor *ivi = wl_resource_get_user_data(shell_res);
@@ -179,9 +277,9 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 		return;
 
 	ivi->shell_client.ready = true;
-	/* TODO: Create a black screen and remove it here */
 
 	wl_list_for_each(output, &ivi->outputs, link) {
+		remove_black_surface(output);
 		ivi_layout_init(ivi, output);
 	}
 
@@ -373,6 +471,8 @@ unbind_agl_shell(struct wl_resource *resource)
 			weston_layer_entry_remove(&output->active->view->layer_link);
 			output->active = NULL;
 		}
+
+		insert_black_surface(output);
 	}
 
 	wl_list_for_each_safe(surf, surf_tmp, &ivi->surfaces, link) {

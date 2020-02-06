@@ -103,6 +103,12 @@ struct ivi_output {
 	struct ivi_surface *left;
 	struct ivi_surface *right;
 
+	/* for the black surface */
+	struct fullscreen_view {
+		struct ivi_surface *fs;
+		struct wl_listener fs_destroy;
+	} fullscreen_view;
+
 	struct wl_listener output_destroy;
 
 	/*
@@ -192,6 +198,9 @@ ivi_agl_systemd_notify(struct ivi_compositor *ivi)
 
 int
 ivi_shell_init(struct ivi_compositor *ivi);
+
+void
+ivi_shell_init_black_fs(struct ivi_compositor *ivi);
 
 int
 ivi_shell_create_global(struct ivi_compositor *ivi);

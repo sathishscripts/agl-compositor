@@ -1209,6 +1209,8 @@ int main(int argc, char *argv[])
 
 	weston_compositor_flush_heads_changed(ivi.compositor);
 
+	ivi_shell_init_black_fs(&ivi);
+
 	if (create_listening_socket(display, socket_name) < 0)
 		goto error_compositor;
 
