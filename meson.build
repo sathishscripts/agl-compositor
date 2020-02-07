@@ -10,6 +10,8 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
+agl_compositor_version = '0.0.13'
+pkgconfig = import('pkgconfig')
 
 cc = meson.get_compiler('c')
 add_project_arguments(
@@ -100,6 +102,10 @@ else
   local_dep = []
 endif
 
+dir_data = join_paths(prefix_path, get_option('datadir'))
+dir_data_agl_compositor = join_paths('agl-compositor', 'protocols')
+dir_data_pc = join_paths(dir_data, 'pkgconfig')
+
 deps_libweston = [
   dependency('wayland-server'),
   dependency('libweston-6'),
@@ -135,4 +141,21 @@ exe_agl_compositor = executable(
 	srcs_agl_compositor,
 	dependencies: deps_libweston,
 	install: true
+)
+
+pkgconfig.generate(
+        filebase: 'agl-compositor-@0@-protocols'.format(agl_compositor_version),
+        name: 'agl-compositor private protocols',
+        version: agl_compositor_version,
+        description: 'agl-compositor protocol files',
+        variables: [
+                'datarootdir=' + join_paths('${prefix}', get_option('datadir')),
+                'pkgdatadir=' + join_paths('${pc_sysrootdir}${datarootdir}', dir_data_agl_compositor)
+        ],
+        install_dir: dir_data_pc
+)
+
+install_data(
+        [ agl_shell_xml ],
+        install_dir: join_paths(dir_data, dir_data_agl_compositor)
 )
