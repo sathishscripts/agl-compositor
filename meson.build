@@ -108,8 +108,8 @@ dir_data_pc = join_paths(dir_data, 'pkgconfig')
 
 deps_libweston = [
   dependency('wayland-server'),
-  dependency('libweston-6'),
-  dependency('libweston-desktop-6'),
+  dependency('libweston-7'),
+  dependency('libweston-desktop-7'),
   local_dep,
 ]
 

@@ -31,7 +31,7 @@
 #include <sys/epoll.h>
 #include <string.h>
 #include <stdlib.h>
-#include <libweston-6/zalloc.h>
+#include <libweston/zalloc.h>
 
 #ifdef HAVE_MEMFD_CREATE
 #include <sys/mman.h>
