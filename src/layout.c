@@ -28,8 +28,8 @@
 #include <assert.h>
 #include <string.h>
 
-#include <libweston-6/compositor.h>
-#include <libweston-6/libweston-desktop.h>
+#include <libweston/libweston.h>
+#include <libweston-desktop/libweston-desktop.h>
 
 #define AGL_COMP_DEBUG
 

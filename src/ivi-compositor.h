@@ -29,10 +29,10 @@
 #include <stdbool.h>
 #include "config.h"
 
-#include <libweston-6/compositor-drm.h>
-#include <libweston-6/compositor.h>
-#include <libweston-6/windowed-output-api.h>
-#include <libweston-6/libweston-desktop.h>
+#include <libweston/backend-drm.h>
+#include <libweston/libweston.h>
+#include <libweston/windowed-output-api.h>
+#include <libweston-desktop/libweston-desktop.h>
 
 #include "agl-shell-server-protocol.h"
 

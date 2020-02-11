@@ -33,8 +33,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <libweston-6/compositor.h>
-#include <libweston-6/config-parser.h>
+#include <libweston/libweston.h>
+#include <libweston/config-parser.h>
 
 #include "shared/os-compatibility.h"
 

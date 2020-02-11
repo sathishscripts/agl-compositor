@@ -36,12 +36,12 @@
 #include <unistd.h>
 #include <linux/input.h>
 
-#include <libweston-6/compositor-drm.h>
-#include <libweston-6/compositor-wayland.h>
-#include <libweston-6/compositor-x11.h>
-#include <libweston-6/compositor.h>
-#include <libweston-6/windowed-output-api.h>
-#include <libweston-6/config-parser.h>
+#include <libweston/backend-drm.h>
+#include <libweston/backend-wayland.h>
+#include <libweston/backend-x11.h>
+#include <libweston/libweston.h>
+#include <libweston/windowed-output-api.h>
+#include <libweston/config-parser.h>
 
 #include "shared/os-compatibility.h"
 

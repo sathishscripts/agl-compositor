@@ -25,8 +25,8 @@
 
 #include "ivi-compositor.h"
 
-#include <libweston-6/compositor.h>
-#include <libweston-6/libweston-desktop.h>
+#include <libweston/libweston.h>
+#include <libweston-desktop/libweston-desktop.h>
 
 #if 0
 static struct weston_output *
