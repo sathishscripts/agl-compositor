@@ -105,10 +105,11 @@ endif
 dir_data = join_paths(prefix_path, get_option('datadir'))
 dir_data_agl_compositor = join_paths('agl-compositor', 'protocols')
 dir_data_pc = join_paths(dir_data, 'pkgconfig')
+libweston_dep = dependency('libweston-7')
 
 deps_libweston = [
   dependency('wayland-server'),
-  dependency('libweston-7'),
+  libweston_dep,
   dependency('libweston-desktop-7'),
   local_dep,
 ]
@@ -124,6 +125,23 @@ srcs_agl_compositor = [
 	agl_shell_protocol_c,
 	xdg_shell_protocol_c,
 ]
+
+# From meson documentation:
+# In order to look for headers in a specific directory you can use args :
+# '-I/extra/include/dir, but this should only be used in exceptional cases for
+# includes that can't be detected via pkg-config and passed via dependencies.
+if libweston_dep.found()
+  if not prefix_path.contains('/usr')
+    dir_path_x11_backend = join_paths(prefix_path, 'include', 'libweston-7', 'libweston', 'backend-x11.h')
+  else
+    dir_path_x11_backend = join_paths('libweston-7', 'libweston', 'backend-x11.h')
+  endif
+
+  # do the test
+  if cc.has_header(dir_path_x11_backend)
+    config_h.set('HAVE_BACKEND_X11', 1)
+  endif
+endif
 
 if dep_libsystemd.found()
   config_h.set('HAVE_SYSTEMD', 1)
