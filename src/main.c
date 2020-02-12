@@ -38,7 +38,9 @@
 
 #include <libweston/backend-drm.h>
 #include <libweston/backend-wayland.h>
+#ifdef HAVE_BACKEND_X11
 #include <libweston/backend-x11.h>
+#endif
 #include <libweston/libweston.h>
 #include <libweston/windowed-output-api.h>
 #include <libweston/config-parser.h>
@@ -709,6 +711,7 @@ load_wayland_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 	return windowed_create_outputs(ivi, output_count, "WL", "wayland");
 }
 
+#ifdef HAVE_BACKEND_X11
 static int
 load_x11_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 {
@@ -746,6 +749,13 @@ load_x11_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 
 	return windowed_create_outputs(ivi, output_count, "X", "screen");
 }
+#else
+static int
+load_x11_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
+{
+	return -1;
+}
+#endif
 
 static int
 load_backend(struct ivi_compositor *ivi, const char *backend,
