@@ -1,6 +1,6 @@
 project('agl-compositor',
   'c',
-  version: '0.0.13',
+  version: '0.0.15',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
