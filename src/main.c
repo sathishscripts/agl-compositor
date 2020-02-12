@@ -42,6 +42,7 @@
 #include <libweston/libweston.h>
 #include <libweston/windowed-output-api.h>
 #include <libweston/config-parser.h>
+#include <libweston/weston-log.h>
 
 #include "shared/os-compatibility.h"
 
@@ -967,8 +968,6 @@ load_config(struct weston_config **config, bool no_config,
 }
 
 static FILE *logfile;
-//static struct weston_log_scope *log_scope;
-//static struct weston_log_scope *protocol_scope;
 
 static int
 log_timestamp(void)
@@ -1118,6 +1117,9 @@ int main(int argc, char *argv[])
 	int no_config = 0;
 	char *config_file = NULL;
 	int debug_protocol = 0;
+	struct weston_log_context *log_ctx = NULL;
+	struct weston_log_scope *log_scope;
+	struct weston_log_subscriber *logger;
 
 	const struct weston_option core_options[] = {
 		{ WESTON_OPTION_STRING, "backend", 'B', &backend },
@@ -1147,8 +1149,20 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
+	log_ctx = weston_log_ctx_compositor_create();
+	if (!log_ctx) {
+		fprintf(stderr, "Failed to initialize weston debug framework.\n");
+		return EXIT_FAILURE;
+	}
+
+        log_scope = weston_compositor_add_log_scope(log_ctx, "log",
+						    "agl-compositor log\n",
+						    NULL, NULL);
+
 	log_file_open(log);
 	weston_log_set_handler(vlog, vlog_continue);
+
+	logger = weston_log_subscriber_create_log(logfile);
 
 	if (load_config(&ivi.config, no_config, config_file) < 0)
 		goto error_signals;
@@ -1181,7 +1195,7 @@ int main(int argc, char *argv[])
 		if (!signals[i])
 			goto error_signals;
 
-	ivi.compositor = weston_compositor_create(display, &ivi);
+	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi);
 	if (!ivi.compositor) {
 		weston_log("fatal: failed to create compositor.\n");
 		goto error_signals;
@@ -1227,7 +1241,15 @@ int main(int argc, char *argv[])
 	wl_display_destroy_clients(display);
 
 error_compositor:
+	weston_compositor_tear_down(ivi.compositor);
+
+	weston_compositor_log_scope_destroy(log_scope);
+	log_scope = NULL;
+
+	weston_log_ctx_compositor_destroy(ivi.compositor);
 	weston_compositor_destroy(ivi.compositor);
+
+	weston_log_subscriber_destroy_log(logger);
 
 error_signals:
 	for (size_t i = 0; i < ARRAY_LENGTH(signals); ++i)
