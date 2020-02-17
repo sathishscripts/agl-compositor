@@ -46,6 +46,7 @@ dep_wp = dependency('wayland-protocols', version: '>= 1.18')
 dir_wp_base = dep_wp.get_pkgconfig_variable('pkgdatadir')
 
 agl_shell_xml = files('protocol/agl-shell.xml')
+agl_shell_desktop_xml = files('protocol/agl-shell-desktop.xml')
 xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
 protocols = [
@@ -177,6 +178,6 @@ pkgconfig.generate(
 )
 
 install_data(
-        [ agl_shell_xml ],
+        [ agl_shell_xml, agl_shell_desktop_xml ],
         install_dir: join_paths(dir_data, dir_data_agl_compositor)
 )
