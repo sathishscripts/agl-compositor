@@ -50,6 +50,7 @@ xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
 protocols = [
   { 'name': 'agl-shell', 'source': 'internal' },
+  { 'name': 'agl-shell-desktop', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
 ]
 
@@ -122,7 +123,9 @@ srcs_agl_compositor = [
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
 	agl_shell_server_protocol_h,
+	agl_shell_desktop_server_protocol_h,
 	agl_shell_protocol_c,
+	agl_shell_desktop_protocol_c,
 	xdg_shell_protocol_c,
 ]
 
