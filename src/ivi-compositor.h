@@ -38,6 +38,11 @@
 
 #define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
 
+struct desktop_client {
+	struct wl_resource *resource;
+	struct wl_list link;	/* ivi_compositor::desktop_clients */
+};
+
 struct ivi_compositor {
 	struct weston_compositor *compositor;
 	struct weston_config *config;
@@ -62,6 +67,7 @@ struct ivi_compositor {
 	const struct weston_drm_output_api *drm_api;
 
 	struct wl_global *agl_shell;
+	struct wl_global *agl_shell_desktop;
 	struct {
 		int activate_apps_by_default;	/* switches once xdg top level has been 'created' */
 	} quirks;
@@ -71,6 +77,8 @@ struct ivi_compositor {
 		struct wl_resource *resource;
 		bool ready;
 	} shell_client;
+
+	struct wl_list desktop_clients;	/* desktop_client::link */
 
 	struct wl_list outputs; /* ivi_output.link */
 	struct wl_list surfaces; /* ivi_surface.link */

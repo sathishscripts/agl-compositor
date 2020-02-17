@@ -1145,6 +1145,7 @@ int main(int argc, char *argv[])
 	wl_list_init(&ivi.outputs);
 	wl_list_init(&ivi.surfaces);
 	wl_list_init(&ivi.pending_surfaces);
+	wl_list_init(&ivi.desktop_clients);
 
 	/* Prevent any clients we spawn getting our stdin */
 	os_fd_set_cloexec(STDIN_FILENO);
