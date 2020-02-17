@@ -39,6 +39,7 @@
 #include "shared/os-compatibility.h"
 
 #include "agl-shell-server-protocol.h"
+#include "agl-shell-desktop-server-protocol.h"
 
 static void
 create_black_surface_view(struct ivi_output *output);
@@ -439,6 +440,10 @@ static const struct agl_shell_interface agl_shell_implementation = {
 	.activate_app = shell_activate_app,
 };
 
+static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
+	.activate_app = shell_activate_app,
+};
+
 static void
 unbind_agl_shell(struct wl_resource *resource)
 {
@@ -526,6 +531,42 @@ bind_agl_shell(struct wl_client *client,
 	ivi->shell_client.resource = resource;
 }
 
+static void
+unbind_agl_shell_desktop(struct wl_resource *resource)
+{
+	struct desktop_client *dclient = wl_resource_get_user_data(resource);
+
+	wl_list_remove(&dclient->link);
+	free(dclient);
+}
+
+static void
+bind_agl_shell_desktop(struct wl_client *client,
+		       void *data, uint32_t version, uint32_t id)
+{
+	struct ivi_compositor *ivi = data;
+	struct wl_resource *resource;
+	struct desktop_client *dclient = zalloc(sizeof(*dclient));
+
+	if (!dclient) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	resource = wl_resource_create(client, &agl_shell_desktop_interface,
+				      version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	wl_resource_set_implementation(resource, &agl_shell_desktop_implementation,
+				       dclient, unbind_agl_shell_desktop);
+
+	dclient->resource = resource;
+	wl_list_insert(&ivi->desktop_clients, &dclient->link);
+}
+
 int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
@@ -534,6 +575,14 @@ ivi_shell_create_global(struct ivi_compositor *ivi)
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");
+		return -1;
+	}
+
+	ivi->agl_shell_desktop = wl_global_create(ivi->compositor->wl_display,
+						  &agl_shell_desktop_interface, 1,
+						  ivi, bind_agl_shell_desktop);
+	if (!ivi->agl_shell_desktop) {
+		weston_log("Failed to create wayland global (agl_shell_desktop).\n");
 		return -1;
 	}
 
