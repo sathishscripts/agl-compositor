@@ -32,6 +32,18 @@
       no mechanism to place to restrict or limit that.
     </description>
 
+    <event name="application">
+      <description summary="advertise application id">
+        The compositor may choose to advertise one or more application ids which
+        can be used to activate/switch to.
+
+        When this global is bound, the compositor will send all application ids
+        available for activation, but may send additional application id at any
+        time (when they've been mapped in the compositor).
+      </description>
+      <arg name="app_id" type="string"/>
+    </event>
+
     <request name="activate_app">
       <description summary="make client current window">
         Ask the compositor to make a toplevel to become the current/focused

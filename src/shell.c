@@ -50,10 +50,19 @@ insert_black_surface(struct ivi_output *output);
 void
 ivi_set_desktop_surface(struct ivi_surface *surface)
 {
+	struct desktop_client *dclient;
+	struct ivi_compositor *ivi = surface->ivi;
 	assert(surface->role == IVI_SURFACE_ROLE_NONE);
 
 	surface->role = IVI_SURFACE_ROLE_DESKTOP;
 	wl_list_insert(&surface->ivi->surfaces, &surface->link);
+
+	/* advertise to all desktop clients the new surface */
+	wl_list_for_each(dclient, &ivi->desktop_clients, link) {
+		const char *app_id =
+			weston_desktop_surface_get_app_id(surface->dsurface);
+		agl_shell_desktop_send_application(dclient->resource, app_id);
+	}
 }
 
 void
@@ -88,6 +97,18 @@ ivi_shell_init(struct ivi_compositor *ivi)
 				  WESTON_LAYER_POSITION_FULLSCREEN);
 
 	return 0;
+}
+
+static void
+ivi_shell_advertise_xdg_surfaces(struct ivi_compositor *ivi, struct wl_resource *resource)
+{
+	struct ivi_surface *surface;
+
+	wl_list_for_each(surface, &ivi->surfaces, link) {
+		const char *app_id =
+			weston_desktop_surface_get_app_id(surface->dsurface);
+		agl_shell_desktop_send_application(resource, app_id);
+	}
 }
 
 static void
@@ -565,6 +586,9 @@ bind_agl_shell_desktop(struct wl_client *client,
 
 	dclient->resource = resource;
 	wl_list_insert(&ivi->desktop_clients, &dclient->link);
+
+	/* advertise xdg surfaces */
+	ivi_shell_advertise_xdg_surfaces(ivi, resource);
 }
 
 int
