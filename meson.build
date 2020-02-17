@@ -10,7 +10,7 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
-agl_compositor_version = '0.0.13'
+agl_compositor_version = '0.0.15'
 pkgconfig = import('pkgconfig')
 
 cc = meson.get_compiler('c')
