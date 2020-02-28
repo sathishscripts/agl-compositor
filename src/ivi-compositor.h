@@ -36,8 +36,6 @@
 
 #include "agl-shell-server-protocol.h"
 
-#define ARRAY_LENGTH(x) (sizeof(x) / sizeof((x)[0]))
-
 struct desktop_client {
 	struct wl_resource *resource;
 	struct wl_list link;	/* ivi_compositor::desktop_clients */

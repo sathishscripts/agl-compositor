@@ -47,6 +47,7 @@
 #include <libweston/weston-log.h>
 
 #include "shared/os-compatibility.h"
+#include "shared/helpers.h"
 
 #include "agl-shell-server-protocol.h"
 
