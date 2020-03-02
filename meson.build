@@ -184,6 +184,6 @@ pkgconfig.generate(
 )
 
 install_data(
-        [ agl_shell_xml, agl_shell_desktop_xml ],
+        [ agl_shell_xml, agl_shell_desktop_xml, agl_shell_policy_xml ],
         install_dir: join_paths(dir_data, dir_data_agl_compositor)
 )
