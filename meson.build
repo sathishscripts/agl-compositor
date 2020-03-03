@@ -47,11 +47,13 @@ dir_wp_base = dep_wp.get_pkgconfig_variable('pkgdatadir')
 
 agl_shell_xml = files('protocol/agl-shell.xml')
 agl_shell_desktop_xml = files('protocol/agl-shell-desktop.xml')
+agl_shell_policy_xml = files('protocol/agl-shell-policy.xml')
 xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
 protocols = [
   { 'name': 'agl-shell', 'source': 'internal' },
   { 'name': 'agl-shell-desktop', 'source': 'internal' },
+  { 'name': 'agl-shell-policy', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
 ]
 
@@ -120,13 +122,16 @@ srcs_agl_compositor = [
 	'src/main.c',
 	'src/desktop.c',
 	'src/layout.c',
+	'src/policy.c',
 	'src/shell.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
 	agl_shell_server_protocol_h,
 	agl_shell_desktop_server_protocol_h,
+	agl_shell_policy_server_protocol_h,
 	agl_shell_protocol_c,
 	agl_shell_desktop_protocol_c,
+	agl_shell_policy_protocol_c,
 	xdg_shell_protocol_c,
 ]
 

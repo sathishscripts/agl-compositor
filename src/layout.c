@@ -24,6 +24,7 @@
  */
 
 #include "ivi-compositor.h"
+#include "policy.h"
 
 #include <assert.h>
 #include <string.h>
@@ -345,10 +346,17 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	struct weston_desktop_surface *dsurf;
 	struct weston_view *view;
 	struct weston_geometry geom;
+	struct ivi_policy *policy = output->ivi->policy;
 
 	surf = ivi_find_app(ivi, app_id);
 	if (!surf)
 		return;
+
+	if (policy->api.surface_activate &&
+	    !policy->api.surface_activate(surf, surf->ivi)) {
+		return;
+	}
+
 #ifdef AGL_COMP_DEBUG
 	weston_log("Found app_id %s\n", app_id);
 #endif

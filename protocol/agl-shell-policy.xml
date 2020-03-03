@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="agl_shell_policy">
+  <copyright>
+    Copyright © 2020 Collabora, Ltd.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice (including the next
+    paragraph) shall be included in all copies or substantial portions of the
+    Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </copyright>
+  <interface name="agl_shell_policy" version="1">
+    <description summary="Private extension for creating">
+      This protocol provides the means to signal state changes to the compositor
+      and to add generic policy rules. The client is ultimately responsible for
+      writing the policy management, as this only exposes the API to do so. Any
+      policy added with 'add' request should be also correlated with the
+      policy_api::policy_rule_try_event callback that it will receive
+      all the arguments passed in the 'add' request.
+
+      The callback receives all information provided in the 'add' request, and
+      will be executed once the state has been modified.
+      The initial state will be state to 'invalid', such that any state change
+      will trigger a check for all policy rules.
+
+      This extension provides by default, a few generic states (see state
+      enum) and a two default events (see event enum). Users can add additional
+      states and events using 'add_state' and 'add_event' request.
+      All the default states and events are already known so there's no need
+      them. Adding a new policy rule will verify if the states and events are known, so
+      it is required to add, before-hand, a new state or event.
+
+      Upon a state change, the client would inform the compositor using the
+      'apply' request that the current state has been modified.
+      The compositor will then verify if any of, previously added rule policies,
+      matches that of the state, and starts to execute the installed hooks for it.
+    </description>
+
+    <enum name="error">
+      <entry name="policy_exists" value="0"/>
+      <entry name="policy_not_allowed" value="1"/>
+      <entry name="policy_state_change_in_progress" value="2"/>
+      <entry name="policy_state_unknown" value="3"/>
+    </enum>
+
+    <enum name="state">
+      <entry name="invalid" value="0"/>
+
+      <entry name="stop" value="1"/>
+      <entry name="start" value="2"/>
+      <entry name="reverse" value="3"/>
+    </enum>
+
+    <enum name="event">
+      <entry name="show" value="0"/>
+      <entry name="hide" value="1"/>
+    </enum>
+
+    <request name="add_state">
+      <description summary="add a new state">
+        Add a new state to the state list.
+      </description>
+      <arg name="state" type="uint"/>
+      <arg name="value" type="string"/>
+    </request>
+
+    <request name="add_event">
+      <description summary="add a new event">
+        Add a new event the events list.
+      </description>
+      <arg name="event" type="uint"/>
+      <arg name="value" type="string"/>
+    </request>
+
+    <request name="add">
+      <description summary="add a rule policy">
+        Adds a policy rule for later processing, when the state change has been
+        requested upon 'apply' request. The timeout (expressed in ms) will only
+	be taken into consideration if bigger than zero.
+
+        Users wanting to check the 'event' or 'state' should alter the
+        hook associated with it.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="state" type="uint" enum="state"/>
+      <arg name="event" type="uint" enum="event"/>
+      <arg name="timeout" type="uint"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
+
+    <request name="apply">
+      <description summary="state has changed">
+        Signals a state change, which should trigger a check of current
+        policy rules that were added so far. Users that require additional
+        states should use 'add_state' before in case they want to use that new
+        state. The same is valid for events.
+      </description>
+      <arg name="state" type="uint"/>
+    </request>
+
+    <event name="done">
+      <description summary="sent in response to apply">
+        Event sent when the 'apply' request has finished. Client should verify
+        that 'state' received back matches that the one being applied in the
+        'apply' request.
+
+        Do note, that an invalid state could be sent back by the compositor in
+        case of error.
+      </description>
+      <arg name="state" type="uint"/>
+    </event>
+
+
+  </interface>
+</protocol>
