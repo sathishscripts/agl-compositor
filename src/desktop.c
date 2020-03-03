@@ -24,6 +24,7 @@
  */
 
 #include "ivi-compositor.h"
+#include "policy.h"
 
 #include <libweston/libweston.h>
 #include <libweston-desktop/libweston-desktop.h>
@@ -80,6 +81,13 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->dsurface = dsurface;
 	surface->role = IVI_SURFACE_ROLE_NONE;
 
+	if (ivi->policy && ivi->policy->api.surface_create &&
+	    !ivi->policy->api.surface_create(surface, ivi)) {
+		free(surface);
+		wl_client_post_no_memory(client);
+		return;
+	}
+
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
 	if (ivi->shell_client.ready) {
@@ -131,6 +139,12 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 {
 	struct ivi_surface *surface =
 		weston_desktop_surface_get_user_data(dsurface);
+	struct ivi_policy *policy = surface->ivi->policy;
+
+	if (policy && policy->api.surface_commited &&
+	    !policy->api.surface_commited(surface, surface->ivi))
+		return;
+
 	weston_compositor_schedule_repaint(surface->ivi->compositor);
 
 	switch (surface->role) {

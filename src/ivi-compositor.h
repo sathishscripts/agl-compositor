@@ -82,6 +82,7 @@ struct ivi_compositor {
 	struct wl_list surfaces; /* ivi_surface.link */
 
 	struct weston_desktop *desktop;
+	struct ivi_policy *policy;
 
 	struct wl_list pending_surfaces;
 
