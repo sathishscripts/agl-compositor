@@ -24,6 +24,7 @@
  */
 
 #include "ivi-compositor.h"
+#include "policy.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -1228,6 +1229,9 @@ int main(int argc, char *argv[])
 	if (ivi_desktop_init(&ivi) < 0)
 		goto error_compositor;
 
+	if (ivi_policy_init(&ivi) < 0)
+		goto error_compositor;
+
 	if (ivi_shell_init(&ivi) < 0)
 		goto error_compositor;
 
@@ -1262,6 +1266,8 @@ error_compositor:
 	weston_compositor_destroy(ivi.compositor);
 
 	weston_log_subscriber_destroy_log(logger);
+
+	ivi_policy_destroy(ivi.policy);
 
 error_signals:
 	for (size_t i = 0; i < ARRAY_LENGTH(signals); ++i)

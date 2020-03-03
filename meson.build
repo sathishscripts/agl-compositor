@@ -123,6 +123,7 @@ srcs_agl_compositor = [
 	'src/desktop.c',
 	'src/layout.c',
 	'src/policy.c',
+	'src/policy-default.c',
 	'src/shell.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
