@@ -243,12 +243,15 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 	output = surf->desktop.pending_output;
 	if (!output) {
 		struct ivi_output *ivi_bg_output;
+		struct ivi_policy *policy = surf->ivi->policy;
 
-		/* FIXME: This should be changed to determine if the policy
-		 * database allows that to happen */
+		if (policy && policy->api.surface_activate_by_default)
+			if (policy->api.surface_activate_by_default(surf, surf->ivi))
+				goto skip_config_check;
+
 		if (!surf->ivi->quirks.activate_apps_by_default)
 			return;
-
+skip_config_check:
 		ivi_bg_output = ivi_layout_find_bg_output(surf->ivi);
 
 		/* use the output of the bg to activate the app on start-up by

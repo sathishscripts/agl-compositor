@@ -58,6 +58,13 @@ ivi_policy_default_surface_activate(struct ivi_surface *surf, void *user_data)
 }
 
 static bool
+ivi_policy_default_surface_activate_default(struct ivi_surface *surf, void *user_data)
+{
+	/* verify that the surface should be switched to */
+	return true;
+}
+
+static bool
 ivi_policy_default_allow_to_add(void *user_data)
 {
 	/* verify that policy rules can be added with ivi_policy_add() */
@@ -89,6 +96,7 @@ static const struct ivi_policy_api policy_api = {
 	.surface_create = ivi_policy_default_surface_create,
 	.surface_commited = ivi_policy_default_surface_commmited,
 	.surface_activate = ivi_policy_default_surface_activate,
+	.surface_activate_by_default = ivi_policy_default_surface_activate_default,
 	.policy_rule_allow_to_add = ivi_policy_default_allow_to_add,
 	.policy_rule_try_event = ivi_policy_default_try_event,
 };
