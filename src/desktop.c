@@ -80,6 +80,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->ivi = ivi;
 	surface->dsurface = dsurface;
 	surface->role = IVI_SURFACE_ROLE_NONE;
+	surface->activated_by_default = false;
 
 	if (ivi->policy && ivi->policy->api.surface_create &&
 	    !ivi->policy->api.surface_create(surface, ivi)) {

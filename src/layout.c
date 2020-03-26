@@ -251,7 +251,12 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 
 		if (!surf->ivi->quirks.activate_apps_by_default)
 			return;
+
 skip_config_check:
+		/* we can only activate it again by using the protocol */
+		if (surf->activated_by_default)
+			return;
+
 		ivi_bg_output = ivi_layout_find_bg_output(surf->ivi);
 
 		/* use the output of the bg to activate the app on start-up by
@@ -259,8 +264,10 @@ skip_config_check:
 		if (surf->view && ivi_bg_output) {
 			const char *app_id =
 				weston_desktop_surface_get_app_id(dsurf);
-			if (app_id && ivi_bg_output)
+			if (app_id && ivi_bg_output) {
 				ivi_layout_activate(ivi_bg_output, app_id);
+				surf->activated_by_default = true;
+			}
 		}
 
 		return;
