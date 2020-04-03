@@ -85,11 +85,13 @@ struct ivi_compositor {
 	struct ivi_policy *policy;
 
 	struct wl_list pending_surfaces;
+	struct wl_list popup_pending_apps;
 
 	struct weston_layer hidden;
 	struct weston_layer background;
 	struct weston_layer normal;
 	struct weston_layer panel;
+	struct weston_layer popup;
 	struct weston_layer fullscreen;
 };
 
@@ -136,6 +138,15 @@ enum ivi_surface_role {
 	IVI_SURFACE_ROLE_DESKTOP,
 	IVI_SURFACE_ROLE_BACKGROUND,
 	IVI_SURFACE_ROLE_PANEL,
+	IVI_SURFACE_ROLE_POPUP,
+};
+
+struct pending_popup {
+	struct ivi_output *ioutput;
+	char *app_id;
+	int x; int y;
+
+	struct wl_list link;	/** ivi_compositor::popup_pending_surfaces */
 };
 
 struct ivi_desktop_surface {
@@ -145,6 +156,12 @@ struct ivi_desktop_surface {
 
 struct ivi_background_surface {
 	struct ivi_output *output;
+};
+
+struct ivi_popup_surface {
+	struct ivi_output *output;
+	int x;
+	int y;
 };
 
 struct ivi_panel_surface {
@@ -177,6 +194,7 @@ struct ivi_surface {
 		struct ivi_desktop_surface desktop;
 		struct ivi_background_surface bg;
 		struct ivi_panel_surface panel;
+		struct ivi_popup_surface popup;
 	};
 };
 
@@ -228,6 +246,15 @@ to_ivi_output(struct weston_output *o);
 void
 ivi_set_desktop_surface(struct ivi_surface *surface);
 
+/*
+ * removes the pending popup one
+ */
+bool
+ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface);
+
+void
+ivi_set_desktop_surface_popup(struct ivi_surface *surface);
+
 void
 ivi_reflow_outputs(struct ivi_compositor *ivi);
 
@@ -256,5 +283,8 @@ ivi_layout_desktop_committed(struct ivi_surface *surf);
 
 void
 ivi_layout_panel_committed(struct ivi_surface *surface);
+
+void
+ivi_layout_popup_committed(struct ivi_surface *surface);
 
 #endif

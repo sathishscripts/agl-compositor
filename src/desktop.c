@@ -92,7 +92,10 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
 	if (ivi->shell_client.ready) {
-		ivi_set_desktop_surface(surface);
+		if (ivi_check_pending_desktop_surface_popup(surface))
+			ivi_set_desktop_surface_popup(surface);
+		else
+			ivi_set_desktop_surface(surface);
 	} else {
 		/*
 		 * We delay creating "normal" desktop surfaces until later, to
@@ -111,10 +114,13 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 
-	struct ivi_output *output = surface->desktop.last_output;
+	struct ivi_output *output;
 
-	/* TODO */
-	if (surface->role != IVI_SURFACE_ROLE_DESKTOP)
+	if (surface->role == IVI_SURFACE_ROLE_DESKTOP)
+		output = surface->desktop.last_output;
+	else if (surface->role == IVI_SURFACE_ROLE_POPUP)
+		output = surface->popup.output;
+	else
 		return;
 
 	/* reset the active surface as well */
@@ -154,6 +160,9 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		break;
 	case IVI_SURFACE_ROLE_PANEL:
 		ivi_layout_panel_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_POPUP:
+		ivi_layout_popup_committed(surface);
 		break;
 	case IVI_SURFACE_ROLE_NONE:
 	case IVI_SURFACE_ROLE_BACKGROUND:

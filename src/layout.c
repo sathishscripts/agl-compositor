@@ -282,6 +282,44 @@ skip_config_check:
 }
 
 void
+ivi_layout_popup_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+
+	struct ivi_output *output = surface->popup.output;
+	struct weston_output *woutput = output->output;
+
+	struct weston_view *view = surface->view;
+	struct weston_geometry geom;
+
+	if (surface->view->is_mapped)
+		return;
+
+	geom = weston_desktop_surface_get_geometry(dsurface);
+	weston_log("geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
+			geom.width, geom.height);
+
+	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
+
+	weston_view_set_output(view, woutput);
+	if (surface->popup.x || surface->popup.y)
+		weston_view_set_position(view, surface->popup.x, surface->popup.y);
+	else
+		weston_view_set_position(view, geom.x, geom.y);
+	weston_layer_entry_insert(&ivi->popup.view_list, &view->layer_link);
+
+	weston_view_update_transform(view);
+	weston_view_schedule_repaint(view);
+
+	wsurface->is_mapped = true;
+	surface->view->is_mapped = true;
+}
+
+void
 ivi_layout_panel_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;

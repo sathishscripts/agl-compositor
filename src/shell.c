@@ -66,6 +66,65 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 }
 
 void
+ivi_set_desktop_surface_popup(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_NONE);
+
+	surface->role = IVI_SURFACE_ROLE_POPUP;
+	wl_list_insert(&ivi->surfaces, &surface->link);
+}
+
+static void
+ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
+				      int x, int y, const char *app_id)
+{
+	struct ivi_compositor *ivi = ioutput->ivi;
+	size_t len_app_id = strlen(app_id);
+
+	struct pending_popup *p_popup = zalloc(sizeof(*p_popup));
+
+	p_popup->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_popup->app_id, app_id, len_app_id);
+	p_popup->ioutput = ioutput;
+	p_popup->x = x;
+	p_popup->y = y;
+
+	wl_list_insert(&ivi->popup_pending_apps, &p_popup->link);
+}
+
+static void
+ivi_remove_pending_desktop_surface_popup(struct pending_popup *p_popup)
+{
+	free(p_popup->app_id);
+	wl_list_remove(&p_popup->link);
+	free(p_popup);
+}
+
+bool
+ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct pending_popup *p_popup, *next_p_popup;
+	const char *_app_id =
+			weston_desktop_surface_get_app_id(surface->dsurface);
+
+	wl_list_for_each_safe(p_popup, next_p_popup,
+			      &ivi->popup_pending_apps, link) {
+		if (!strcmp(_app_id, p_popup->app_id)) {
+			surface->popup.output = p_popup->ioutput;
+			surface->popup.x = p_popup->x;
+			surface->popup.y = p_popup->y;
+
+			ivi_remove_pending_desktop_surface_popup(p_popup);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void
 ivi_shell_init_black_fs(struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;
@@ -83,6 +142,7 @@ ivi_shell_init(struct ivi_compositor *ivi)
 	weston_layer_init(&ivi->background, ivi->compositor);
 	weston_layer_init(&ivi->normal, ivi->compositor);
 	weston_layer_init(&ivi->panel, ivi->compositor);
+	weston_layer_init(&ivi->popup, ivi->compositor);
 	weston_layer_init(&ivi->fullscreen, ivi->compositor);
 
 	weston_layer_set_position(&ivi->hidden,
@@ -93,6 +153,8 @@ ivi_shell_init(struct ivi_compositor *ivi)
 				  WESTON_LAYER_POSITION_NORMAL);
 	weston_layer_set_position(&ivi->panel,
 				  WESTON_LAYER_POSITION_UI);
+	weston_layer_set_position(&ivi->popup,
+				  WESTON_LAYER_POSITION_TOP_UI);
 	weston_layer_set_position(&ivi->fullscreen,
 				  WESTON_LAYER_POSITION_FULLSCREEN);
 
@@ -467,8 +529,24 @@ static const struct agl_shell_interface agl_shell_implementation = {
 	.activate_app = shell_activate_app,
 };
 
+static void
+shell_desktop_set_app_property(struct wl_client *client,
+			       struct wl_resource *shell_res,
+			       const char *app_id, uint32_t role,
+			       int x, int y, struct wl_resource *output_res)
+{
+	struct weston_head *head = weston_head_from_resource(output_res);
+	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_output *output = to_ivi_output(woutput);
+
+	/* temporary store the app_id such that, when created to be check against */
+	if (role == AGL_SHELL_DESKTOP_APP_ROLE_POPUP)
+		ivi_set_pending_desktop_surface_popup(output, x, y, app_id);
+}
+
 static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
 	.activate_app = shell_activate_app,
+	.set_app_property = shell_desktop_set_app_property
 };
 
 static void
