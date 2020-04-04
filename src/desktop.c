@@ -117,7 +117,7 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		return;
 
 	/* reset the active surface as well */
-	if (output && output->active) {
+	if (output && output->active && output->active == surface) {
 		output->active->view->is_mapped = false;
 		output->active->view->surface->is_mapped = false;
 
