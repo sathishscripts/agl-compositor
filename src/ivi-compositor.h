@@ -130,6 +130,7 @@ struct ivi_output {
 	struct weston_geometry area;
 
 	struct ivi_surface *active;
+	struct ivi_surface *previous_active;
 
 	/* Temporary: only used during configuration */
 	size_t add_len;
@@ -289,5 +290,8 @@ ivi_layout_panel_committed(struct ivi_surface *surface);
 
 void
 ivi_layout_popup_committed(struct ivi_surface *surface);
+
+void
+ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id);
 
 #endif

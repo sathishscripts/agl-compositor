@@ -522,6 +522,15 @@ shell_activate_app(struct wl_client *client,
 	ivi_layout_activate(output, app_id);
 }
 
+static void
+shell_deactivate_app(struct wl_client *client,
+		   struct wl_resource *shell_res,
+		   const char *app_id)
+{
+	struct desktop_client *dclient = wl_resource_get_user_data(shell_res);
+	ivi_layout_deactivate(dclient->ivi, app_id);
+}
+
 static const struct agl_shell_interface agl_shell_implementation = {
 	.ready = shell_ready,
 	.set_background = shell_set_background,
@@ -546,7 +555,8 @@ shell_desktop_set_app_property(struct wl_client *client,
 
 static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
 	.activate_app = shell_activate_app,
-	.set_app_property = shell_desktop_set_app_property
+	.set_app_property = shell_desktop_set_app_property,
+	.deactivate_app = shell_deactivate_app,
 };
 
 static void

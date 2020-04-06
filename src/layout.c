@@ -206,6 +206,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 		weston_layer_entry_remove(&output->active->view->layer_link);
 	}
+	output->previous_active = output->active;
 	output->active = surf;
 
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
@@ -313,10 +314,31 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	weston_layer_entry_insert(&ivi->popup.view_list, &view->layer_link);
 
 	weston_view_update_transform(view);
-	weston_view_schedule_repaint(view);
+	weston_view_damage_below(view);
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
+}
+
+static void
+ivi_layout_popup_re_add(struct ivi_surface *surface)
+{
+	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
+	struct weston_view *view = surface->view;
+	struct ivi_compositor *ivi = surface->ivi;
+
+	if (weston_view_is_mapped(view)) {
+		struct weston_desktop_surface *dsurface = surface->dsurface;
+		struct weston_surface *wsurface =
+			weston_desktop_surface_get_surface(dsurface);
+
+		weston_layer_entry_remove(&view->layer_link);
+
+		wsurface->is_mapped = false;
+		view->is_mapped = false;
+	}
+
+	ivi_layout_popup_committed(surface);
 }
 
 void
@@ -408,6 +430,12 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 #ifdef AGL_COMP_DEBUG
 	weston_log("Found app_id %s\n", app_id);
 #endif
+
+	if (surf->role == IVI_SURFACE_ROLE_POPUP) {
+		ivi_layout_popup_re_add(surf);
+		return;
+	}
+
 	if (surf == output->active)
 		return;
 
@@ -443,4 +471,76 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		weston_output_damage(output->output);
 	}
 
+}
+
+static struct ivi_output *
+ivi_layout_get_output_from_surface(struct ivi_surface *surf)
+{
+	struct ivi_output *ivi_output = NULL;
+
+	switch (surf->role) {
+	case IVI_SURFACE_ROLE_DESKTOP:
+		if (surf->desktop.pending_output)
+			ivi_output = surf->desktop.pending_output;
+		else
+			ivi_output = surf->desktop.last_output;
+		break;
+	case IVI_SURFACE_ROLE_POPUP:
+		ivi_output = surf->popup.output;
+		break;
+	default:
+	case IVI_SURFACE_ROLE_BACKGROUND:
+	case IVI_SURFACE_ROLE_PANEL:
+	case IVI_SURFACE_ROLE_NONE:
+		break;
+	}
+
+	return ivi_output;
+}
+
+void
+ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
+{
+	struct ivi_surface *surf;
+	struct ivi_output *ivi_output;
+
+	surf = ivi_find_app(ivi, app_id);
+	if (!surf)
+		return;
+
+	ivi_output = ivi_layout_get_output_from_surface(surf);
+	weston_log("deactiving %s\n", app_id);
+
+	if (surf->role == IVI_SURFACE_ROLE_DESKTOP) {
+		struct ivi_surface *previous_active;
+
+		previous_active = ivi_output->previous_active;
+		if (!previous_active) {
+			/* we don't have a previous active it means we should
+			 * display the bg */
+			if (ivi_output->active) {
+				struct weston_view *view;
+
+				view = ivi_output->active->view;
+				view->is_mapped = false;
+				view->surface->is_mapped = false;
+
+				weston_layer_entry_remove(&view->layer_link);
+				weston_output_damage(ivi_output->output);
+			}
+		} else {
+			struct weston_desktop_surface *dsurface;
+			const char *previous_active_app_id;
+
+			dsurface = previous_active->dsurface;
+			previous_active_app_id =
+				weston_desktop_surface_get_app_id(dsurface);
+			ivi_layout_activate(ivi_output, previous_active_app_id);
+		}
+	} else if (surf->role == IVI_SURFACE_ROLE_POPUP) {
+		struct weston_view *view  = surf->view;
+
+		weston_layer_entry_remove(&view->layer_link);
+		weston_view_damage_below(view);
+	}
 }
