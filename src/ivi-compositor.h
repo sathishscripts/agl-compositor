@@ -36,8 +36,11 @@
 
 #include "agl-shell-server-protocol.h"
 
+struct ivi_compositor;
+
 struct desktop_client {
 	struct wl_resource *resource;
+	struct ivi_compositor *ivi;
 	struct wl_list link;	/* ivi_compositor::desktop_clients */
 };
 

@@ -660,6 +660,7 @@ bind_agl_shell_desktop(struct wl_client *client,
 
 	resource = wl_resource_create(client, &agl_shell_desktop_interface,
 				      version, id);
+	dclient->ivi = ivi;
 	if (!resource) {
 		wl_client_post_no_memory(client);
 		return;
