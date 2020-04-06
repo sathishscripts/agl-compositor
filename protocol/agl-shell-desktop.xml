@@ -32,6 +32,11 @@
       no mechanism to place to restrict or limit that.
     </description>
 
+    <enum name="app_role">
+      <entry name="popup" value="0"/>
+      <entry name="fullscreen" value="1"/>
+    </enum>
+
     <event name="application">
       <description summary="advertise application id">
         The compositor may choose to advertise one or more application ids which
@@ -53,6 +58,22 @@
         description of app_id.
       </description>
       <arg name="app_id" type="string"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
+
+    <request name="set_app_property">
+      <description summary="set properties for a client identified by app_id">
+        Ask the compositor to make a toplevel obey the app_role and, depending
+        on the role, to use the the x and y values as initial positional values.
+        The x and y values would only make sense for certain roles.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="role" type="uint" enum="app_role"/>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
       <arg name="output" type="object" interface="wl_output"/>
     </request>
   </interface>
