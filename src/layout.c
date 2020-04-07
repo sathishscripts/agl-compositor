@@ -415,6 +415,7 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	view = surf->view;
 	geom = weston_desktop_surface_get_geometry(dsurf);
 
+	surf->desktop.pending_output = output;
 	if (weston_desktop_surface_get_maximized(dsurf) &&
 	    geom.width == output->area.width &&
 	    geom.height == output->area.height) {
@@ -442,5 +443,4 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		weston_output_damage(output->output);
 	}
 
-	surf->desktop.pending_output = output;
 }
