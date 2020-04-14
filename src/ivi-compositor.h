@@ -273,6 +273,9 @@ ivi_layout_set_position(struct ivi_surface *surface,
 			int32_t x, int32_t y,
 			int32_t width, int32_t height);
 
+struct ivi_surface *
+ivi_find_app(struct ivi_compositor *ivi, const char *app_id);
+
 void
 ivi_layout_commit(struct ivi_compositor *ivi);
 

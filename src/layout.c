@@ -32,6 +32,8 @@
 #include <libweston/libweston.h>
 #include <libweston-desktop/libweston-desktop.h>
 
+#include "agl-shell-desktop-server-protocol.h"
+
 #define AGL_COMP_DEBUG
 
 static void
@@ -165,7 +167,7 @@ ivi_layout_init(struct ivi_compositor *ivi, struct ivi_output *output)
 		   output->area.x, output->area.y);
 }
 
-static struct ivi_surface *
+struct ivi_surface *
 ivi_find_app(struct ivi_compositor *ivi, const char *app_id)
 {
 	struct ivi_surface *surf;
@@ -470,7 +472,6 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		/* force repaint of the entire output */
 		weston_output_damage(output->output);
 	}
-
 }
 
 static struct ivi_output *

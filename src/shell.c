@@ -509,6 +509,29 @@ shell_set_panel(struct wl_client *client,
 	weston_desktop_surface_set_size(dsurface, width, height);
 }
 
+
+static void
+shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
+			  const char *data, uint32_t app_state)
+{
+	struct desktop_client *dclient;
+	uint32_t app_role;
+	struct ivi_surface *surf = ivi_find_app(ivi, app_id);
+
+	/* FIXME: should queue it here and see when binding agl-shell-desktop
+	 * if there are any to be sent */
+	if (!surf)
+		return;
+
+	app_role = surf->role;
+	if (app_role == IVI_SURFACE_ROLE_POPUP)
+		app_role = AGL_SHELL_DESKTOP_APP_ROLE_POPUP;
+
+	wl_list_for_each(dclient, &ivi->desktop_clients, link)
+		agl_shell_desktop_send_state_app(dclient->resource, app_id,
+						 data, app_state, app_role);
+}
+
 static void
 shell_activate_app(struct wl_client *client,
 		   struct wl_resource *shell_res,
@@ -523,12 +546,31 @@ shell_activate_app(struct wl_client *client,
 }
 
 static void
+shell_desktop_activate_app(struct wl_client *client,
+			   struct wl_resource *shell_res,
+			   const char *app_id, const char *data,
+			   struct wl_resource *output_res)
+{
+	struct weston_head *head = weston_head_from_resource(output_res);
+	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_output *output = to_ivi_output(woutput);
+
+	ivi_layout_activate(output, app_id);
+	shell_advertise_app_state(output->ivi, app_id,
+				  data, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+}
+
+static void
 shell_deactivate_app(struct wl_client *client,
 		   struct wl_resource *shell_res,
 		   const char *app_id)
 {
 	struct desktop_client *dclient = wl_resource_get_user_data(shell_res);
-	ivi_layout_deactivate(dclient->ivi, app_id);
+	struct ivi_compositor *ivi = dclient->ivi;
+
+	ivi_layout_deactivate(ivi, app_id);
+	shell_advertise_app_state(ivi, app_id,
+				  NULL, AGL_SHELL_DESKTOP_APP_STATE_DEACTIVATED);
 }
 
 static const struct agl_shell_interface agl_shell_implementation = {
@@ -554,7 +596,7 @@ shell_desktop_set_app_property(struct wl_client *client,
 }
 
 static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
-	.activate_app = shell_activate_app,
+	.activate_app = shell_desktop_activate_app,
 	.set_app_property = shell_desktop_set_app_property,
 	.deactivate_app = shell_deactivate_app,
 };

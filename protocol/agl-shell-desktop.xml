@@ -37,6 +37,11 @@
       <entry name="fullscreen" value="1"/>
     </enum>
 
+    <enum name="app_state">
+      <entry name="activated" value="0"/>
+      <entry name="deactivated" value="1"/>
+    </enum>
+
     <event name="application">
       <description summary="advertise application id">
         The compositor may choose to advertise one or more application ids which
@@ -58,6 +63,7 @@
         description of app_id.
       </description>
       <arg name="app_id" type="string"/>
+      <arg name="app_data" type="string" allow-null="true"/>
       <arg name="output" type="object" interface="wl_output"/>
     </request>
 
@@ -92,5 +98,16 @@
       </description>
       <arg name="app_id" type="string"/>
     </request>
+
+    <event name="state_app">
+      <description summary="event sent when application has suffered state modification">
+        Notifies application(s) when other application have suffered state modifications.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="app_data" type="string" allow-null="true"/>
+      <arg name="state" type="uint" enum="app_state"/>
+      <arg name="role" type="uint" enum="app_role"/>
+    </event>
+
   </interface>
 </protocol>
