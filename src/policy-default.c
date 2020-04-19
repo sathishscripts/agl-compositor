@@ -85,7 +85,7 @@ ivi_policy_default_try_event(struct ivi_a_policy *a_policy)
 		ivi_layout_activate(a_policy->output, a_policy->app_id);
 		break;
 	case AGL_SHELL_POLICY_EVENT_HIDE:
-		/* FIXME: remove the active one, like basically unmap it? */
+		ivi_layout_deactivate(a_policy->policy->ivi, a_policy->app_id);
 	default:
 		break;
 	}
