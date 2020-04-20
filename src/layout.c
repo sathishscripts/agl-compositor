@@ -503,10 +503,16 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 {
 	struct ivi_surface *surf;
 	struct ivi_output *ivi_output;
+	struct ivi_policy *policy = ivi->policy;
 
 	surf = ivi_find_app(ivi, app_id);
 	if (!surf)
 		return;
+
+	if (policy && policy->api.surface_deactivate &&
+	    !policy->api.surface_deactivate(surf, surf->ivi)) {
+		return;
+	}
 
 	ivi_output = ivi_layout_get_output_from_surface(surf);
 	weston_log("deactiving %s\n", app_id);

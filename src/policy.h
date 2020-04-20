@@ -70,6 +70,7 @@ struct ivi_policy_api {
 	bool (*surface_create)(struct ivi_surface *surf, void *user_data);
 	bool (*surface_commited)(struct ivi_surface *surf, void *user_data);
 	bool (*surface_activate)(struct ivi_surface *surf, void *user_data);
+	bool (*surface_deactivate)(struct ivi_surface *surf, void *user_data);
 
 	bool (*surface_activate_by_default)(struct ivi_surface *surf, void *user_data);
 
