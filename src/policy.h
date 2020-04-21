@@ -73,6 +73,7 @@ struct ivi_policy_api {
 	bool (*surface_deactivate)(struct ivi_surface *surf, void *user_data);
 
 	bool (*surface_activate_by_default)(struct ivi_surface *surf, void *user_data);
+	bool (*surface_advertise_state_change)(struct ivi_surface *surf, void *user_data);
 
 	/** see also ivi_policy_add(). If set this will be executed before
 	 * adding a new policy rule  */

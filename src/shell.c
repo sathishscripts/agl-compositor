@@ -24,6 +24,7 @@
  */
 
 #include "ivi-compositor.h"
+#include "policy.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -517,11 +518,17 @@ shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
 	struct desktop_client *dclient;
 	uint32_t app_role;
 	struct ivi_surface *surf = ivi_find_app(ivi, app_id);
+	struct ivi_policy *policy = ivi->policy;
 
 	/* FIXME: should queue it here and see when binding agl-shell-desktop
 	 * if there are any to be sent */
 	if (!surf)
 		return;
+
+	if (policy && policy->api.surface_advertise_state_change &&
+	    !policy->api.surface_advertise_state_change(surf, surf->ivi)) {
+		return;
+	}
 
 	app_role = surf->role;
 	if (app_role == IVI_SURFACE_ROLE_POPUP)
