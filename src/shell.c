@@ -307,7 +307,13 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
 		wl_list_remove(&surface->link);
-		ivi_set_desktop_surface(surface);
+
+		if (ivi_check_pending_desktop_surface_popup(surface)) {
+			ivi_set_desktop_surface_popup(surface);
+		} else {
+			ivi_set_desktop_surface(surface);
+			ivi_layout_desktop_committed(surface);
+		}
 	}
 }
 
