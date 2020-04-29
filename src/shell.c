@@ -66,13 +66,37 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 	}
 }
 
-void
+static void
 ivi_set_desktop_surface_popup(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
 	assert(surface->role == IVI_SURFACE_ROLE_NONE);
 
 	surface->role = IVI_SURFACE_ROLE_POPUP;
+	wl_list_insert(&ivi->surfaces, &surface->link);
+}
+
+static void
+ivi_set_desktop_surface_fs(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_NONE);
+
+	surface->role = IVI_SURFACE_ROLE_FS;
+	wl_list_insert(&ivi->surfaces, &surface->link);
+}
+
+static void
+ivi_set_desktop_surface_split(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_NONE);
+
+	if (surface->split.orientation == AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_VERTICAL)
+		surface->role = IVI_SURFACE_ROLE_SPLIT_V;
+	else
+		surface->role = IVI_SURFACE_ROLE_SPLIT_H;
+
 	wl_list_insert(&ivi->surfaces, &surface->link);
 }
 
@@ -95,6 +119,61 @@ ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
 }
 
 static void
+ivi_set_pending_desktop_surface_fullscreen(struct ivi_output *ioutput,
+					   const char *app_id)
+{
+	struct ivi_compositor *ivi = ioutput->ivi;
+	size_t len_app_id = strlen(app_id);
+
+	struct pending_fullscreen *fs = zalloc(sizeof(*fs));
+
+	fs->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(fs->app_id, app_id, len_app_id);
+
+	fs->ioutput = ioutput;
+
+	wl_list_insert(&ivi->fullscreen_pending_apps, &fs->link);
+}
+
+static void
+ivi_set_pending_desktop_surface_split(struct ivi_output *ioutput,
+				      const char *app_id, uint32_t orientation)
+{
+	struct ivi_compositor *ivi = ioutput->ivi;
+	size_t len_app_id = strlen(app_id);
+
+	if (orientation != AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_VERTICAL &&
+	    orientation != AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_HORIZONTAL)
+		return;
+
+	struct pending_split *split = zalloc(sizeof(*split));
+
+	split->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(split->app_id, app_id, len_app_id);
+
+	split->ioutput = ioutput;
+	split->orientation = orientation;
+
+	wl_list_insert(&ivi->split_pending_apps, &split->link);
+}
+
+static void
+ivi_remove_pending_desktop_surface_split(struct pending_split *split)
+{
+	free(split->app_id);
+	wl_list_remove(&split->link);
+	free(split);
+}
+
+static void
+ivi_remove_pending_desktop_surface_fullscreen(struct pending_fullscreen *fs)
+{
+	free(fs->app_id);
+	wl_list_remove(&fs->link);
+	free(fs);
+}
+
+static void
 ivi_remove_pending_desktop_surface_popup(struct pending_popup *p_popup)
 {
 	free(p_popup->app_id);
@@ -102,7 +181,7 @@ ivi_remove_pending_desktop_surface_popup(struct pending_popup *p_popup)
 	free(p_popup);
 }
 
-bool
+static bool
 ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
@@ -110,19 +189,95 @@ ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 	const char *_app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
 
+	if (wl_list_empty(&ivi->popup_pending_apps))
+		return false;
+
 	wl_list_for_each_safe(p_popup, next_p_popup,
 			      &ivi->popup_pending_apps, link) {
 		if (!strcmp(_app_id, p_popup->app_id)) {
 			surface->popup.output = p_popup->ioutput;
 			surface->popup.x = p_popup->x;
 			surface->popup.y = p_popup->y;
-
 			ivi_remove_pending_desktop_surface_popup(p_popup);
 			return true;
 		}
 	}
 
 	return false;
+}
+
+static bool
+ivi_check_pending_desktop_surface_split(struct ivi_surface *surface)
+{
+	struct pending_split *split_surf, *next_split_surf;
+	struct ivi_compositor *ivi = surface->ivi;
+	const char *_app_id =
+			weston_desktop_surface_get_app_id(surface->dsurface);
+
+	if (wl_list_empty(&ivi->split_pending_apps))
+		return false;
+
+	wl_list_for_each_safe(split_surf, next_split_surf,
+			      &ivi->split_pending_apps, link) {
+		if (!strcmp(_app_id, split_surf->app_id)) {
+			surface->split.output = split_surf->ioutput;
+			surface->split.orientation = split_surf->orientation;
+			ivi_remove_pending_desktop_surface_split(split_surf);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
+ivi_check_pending_desktop_surface_fs(struct ivi_surface *surface)
+{
+	struct pending_fullscreen *fs_surf, *next_fs_surf;
+	struct ivi_compositor *ivi = surface->ivi;
+	const char *_app_id =
+			weston_desktop_surface_get_app_id(surface->dsurface);
+
+	if (wl_list_empty(&ivi->fullscreen_pending_apps))
+		return false;
+
+	wl_list_for_each_safe(fs_surf, next_fs_surf,
+			      &ivi->fullscreen_pending_apps, link) {
+		if (!strcmp(_app_id, fs_surf->app_id)) {
+			surface->fs.output = fs_surf->ioutput;
+			ivi_remove_pending_desktop_surface_fullscreen(fs_surf);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void
+ivi_check_pending_desktop_surface(struct ivi_surface *surface)
+{
+	bool ret = false;
+
+	ret = ivi_check_pending_desktop_surface_popup(surface);
+	if (ret) {
+		ivi_set_desktop_surface_popup(surface);
+		return;
+	}
+
+	ret = ivi_check_pending_desktop_surface_split(surface);
+	if (ret) {
+		ivi_set_desktop_surface_split(surface);
+		return;
+	}
+
+	ret = ivi_check_pending_desktop_surface_fs(surface);
+	if (ret) {
+		ivi_set_desktop_surface_fs(surface);
+		return;
+	}
+
+	/* if we end up here means we have a regular desktop app */
+	ivi_set_desktop_surface(surface);
 }
 
 void
@@ -597,9 +752,20 @@ shell_desktop_set_app_property(struct wl_client *client,
 	struct weston_output *woutput = weston_head_get_output(head);
 	struct ivi_output *output = to_ivi_output(woutput);
 
-	/* temporary store the app_id such that, when created to be check against */
-	if (role == AGL_SHELL_DESKTOP_APP_ROLE_POPUP)
+	switch (role) {
+	case AGL_SHELL_DESKTOP_APP_ROLE_POPUP:
 		ivi_set_pending_desktop_surface_popup(output, x, y, app_id);
+		break;
+	case AGL_SHELL_DESKTOP_APP_ROLE_FULLSCREEN:
+		ivi_set_pending_desktop_surface_fullscreen(output, app_id);
+		break;
+	case AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_VERTICAL:
+	case AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_HORIZONTAL:
+		ivi_set_pending_desktop_surface_split(output, app_id, role);
+		break;
+	default:
+		break;
+	}
 }
 
 static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
