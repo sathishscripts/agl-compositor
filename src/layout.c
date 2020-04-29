@@ -285,6 +285,98 @@ skip_config_check:
 }
 
 void
+ivi_layout_fs_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+
+	struct ivi_output *output = surface->split.output;
+	struct weston_output *woutput = output->output;
+
+	struct weston_view *view = surface->view;
+	struct weston_geometry geom;
+
+	if (surface->view->is_mapped)
+		return;
+
+	geom = weston_desktop_surface_get_geometry(dsurface);
+	weston_log("(fs) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
+			geom.width, geom.height);
+
+	assert(surface->role == IVI_SURFACE_ROLE_FS);
+
+	weston_desktop_surface_set_fullscreen(dsurface, true);
+
+	weston_view_set_output(view, woutput);
+	weston_view_set_position(view, woutput->x, woutput->y);
+	weston_layer_entry_insert(&ivi->fullscreen.view_list, &view->layer_link);
+
+	weston_view_update_transform(view);
+	weston_view_damage_below(view);
+
+	wsurface->is_mapped = true;
+	surface->view->is_mapped = true;
+}
+
+void
+ivi_layout_split_committed(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+	struct weston_surface *wsurface =
+		weston_desktop_surface_get_surface(dsurface);
+
+	struct ivi_output *output = surface->split.output;
+	struct weston_output *woutput = output->output;
+
+	struct weston_view *view = surface->view;
+	struct weston_geometry geom;
+	int x;
+	int y;
+
+	x = woutput->x;
+	y = woutput->y;
+
+	if (surface->view->is_mapped)
+		return;
+
+	geom = weston_desktop_surface_get_geometry(dsurface);
+	weston_log("(split) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
+			geom.width, geom.height);
+
+	assert(surface->role == IVI_SURFACE_ROLE_SPLIT_H ||
+	       surface->role == IVI_SURFACE_ROLE_SPLIT_V);
+
+	weston_view_set_output(view, woutput);
+
+	switch (surface->role) {
+	case IVI_SURFACE_ROLE_SPLIT_V:
+		x += woutput->width - geom.width;
+		output->area.width -= geom.width;
+		break;
+	case IVI_SURFACE_ROLE_SPLIT_H:
+		output->area.y += geom.height;
+		output->area.height -= geom.height;
+		break;
+	default:
+		abort();
+	}
+
+	weston_view_set_position(view, x, y);
+	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
+
+	weston_view_update_transform(view);
+	weston_view_damage_below(view);
+
+	wsurface->is_mapped = true;
+	surface->view->is_mapped = true;
+}
+
+void
 ivi_layout_popup_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
