@@ -118,6 +118,11 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		output = surface->desktop.last_output;
 	else if (surface->role == IVI_SURFACE_ROLE_POPUP)
 		output = surface->popup.output;
+	else if (surface->role == IVI_SURFACE_ROLE_SPLIT_H ||
+		 surface->role == IVI_SURFACE_ROLE_SPLIT_V)
+		output = surface->split.output;
+	else if (surface->role == IVI_SURFACE_ROLE_FULLSCREEN)
+		output = surface->fullscreen.output;
 	else
 		return;
 
@@ -184,6 +189,13 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		break;
 	case IVI_SURFACE_ROLE_POPUP:
 		ivi_layout_popup_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_FULLSCREEN:
+		ivi_layout_fullscreen_committed(surface);
+		break;
+	case IVI_SURFACE_ROLE_SPLIT_H:
+	case IVI_SURFACE_ROLE_SPLIT_V:
+		ivi_layout_split_committed(surface);
 		break;
 	case IVI_SURFACE_ROLE_NONE:
 	case IVI_SURFACE_ROLE_BACKGROUND:

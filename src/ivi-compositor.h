@@ -321,6 +321,12 @@ void
 ivi_layout_popup_committed(struct ivi_surface *surface);
 
 void
+ivi_layout_fullscreen_committed(struct ivi_surface *surface);
+
+void
+ivi_layout_split_committed(struct ivi_surface *surface);
+
+void
 ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id);
 
 #endif

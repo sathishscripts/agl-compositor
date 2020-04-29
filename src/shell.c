@@ -140,14 +140,22 @@ ivi_set_pending_desktop_surface_split(struct ivi_output *ioutput,
 				      const char *app_id, uint32_t orientation)
 {
 	struct ivi_compositor *ivi = ioutput->ivi;
+	struct ivi_surface *surf;
 	size_t len_app_id = strlen(app_id);
+	struct pending_split *split;
 
 	if (orientation != AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_VERTICAL &&
 	    orientation != AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_HORIZONTAL)
 		return;
 
-	struct pending_split *split = zalloc(sizeof(*split));
+	/* more than one is un-supported, do note we need to do
+	 * conversion for surface roles instead of using the protocol ones */
+	wl_list_for_each(surf, &ivi->surfaces, link)
+		if (surf->role == IVI_SURFACE_ROLE_SPLIT_V ||
+		    surf->role == IVI_SURFACE_ROLE_SPLIT_H)
+			return;
 
+	split = zalloc(sizeof(*split));
 	split->app_id = zalloc(sizeof(char) * (len_app_id + 1));
 	memcpy(split->app_id, app_id, len_app_id);
 
