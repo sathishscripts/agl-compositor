@@ -35,6 +35,8 @@
     <enum name="app_role">
       <entry name="popup" value="0"/>
       <entry name="fullscreen" value="1"/>
+      <entry name="split_vertical" value="2"/>
+      <entry name="split_horizontal" value="3"/>
     </enum>
 
     <enum name="app_state">

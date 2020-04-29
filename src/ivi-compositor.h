@@ -89,6 +89,8 @@ struct ivi_compositor {
 
 	struct wl_list pending_surfaces;
 	struct wl_list popup_pending_apps;
+	struct wl_list fullscreen_pending_apps;
+	struct wl_list split_pending_apps;
 
 	struct weston_layer hidden;
 	struct weston_layer background;
@@ -143,6 +145,9 @@ enum ivi_surface_role {
 	IVI_SURFACE_ROLE_BACKGROUND,
 	IVI_SURFACE_ROLE_PANEL,
 	IVI_SURFACE_ROLE_POPUP,
+	IVI_SURFACE_ROLE_FULLSCREEN,
+	IVI_SURFACE_ROLE_SPLIT_V,
+	IVI_SURFACE_ROLE_SPLIT_H,
 };
 
 struct pending_popup {
@@ -151,6 +156,19 @@ struct pending_popup {
 	int x; int y;
 
 	struct wl_list link;	/** ivi_compositor::popup_pending_surfaces */
+};
+
+struct pending_fullscreen {
+	struct ivi_output *ioutput;
+	char *app_id;
+	struct wl_list link;	/** ivi_compositor::fullscreen_pending_apps */
+};
+
+struct pending_split {
+	struct ivi_output *ioutput;
+	char *app_id;
+	uint32_t orientation;
+	struct wl_list link;	/** ivi_compositor::split_pending_apps */
 };
 
 struct ivi_desktop_surface {
@@ -166,6 +184,15 @@ struct ivi_popup_surface {
 	struct ivi_output *output;
 	int x;
 	int y;
+};
+
+struct ivi_fullscreen_surface {
+	struct ivi_output *output;
+};
+
+struct ivi_split_surface {
+	struct ivi_output *output;
+	uint32_t orientation;
 };
 
 struct ivi_panel_surface {
@@ -199,6 +226,8 @@ struct ivi_surface {
 		struct ivi_background_surface bg;
 		struct ivi_panel_surface panel;
 		struct ivi_popup_surface popup;
+		struct ivi_fullscreen_surface fullscreen;
+		struct ivi_split_surface split;
 	};
 };
 
@@ -253,11 +282,8 @@ ivi_set_desktop_surface(struct ivi_surface *surface);
 /*
  * removes the pending popup one
  */
-bool
-ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface);
-
 void
-ivi_set_desktop_surface_popup(struct ivi_surface *surface);
+ivi_check_pending_desktop_surface(struct ivi_surface *surface);
 
 void
 ivi_reflow_outputs(struct ivi_compositor *ivi);
