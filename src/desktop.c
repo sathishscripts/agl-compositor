@@ -125,6 +125,16 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	else
 		return;
 
+	/* resize the active surface to the original size */
+	if (surface->role == IVI_SURFACE_ROLE_SPLIT_H ||
+	    surface->role == IVI_SURFACE_ROLE_SPLIT_V) {
+		if (output && output->active) {
+			ivi_layout_desktop_resize(output->active, output->area_saved);
+		}
+		/* restore the area back so we can re-use it again if needed */
+		output->area = output->area_saved;
+	}
+
 	/* reset the active surface as well */
 	if (output && output->active && output->active == surface) {
 		output->active->view->is_mapped = false;
