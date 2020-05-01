@@ -130,6 +130,7 @@ struct ivi_output {
 	 * In output-coorrdinate space.
 	 */
 	struct weston_geometry area;
+	struct weston_geometry area_saved;
 
 	struct ivi_surface *active;
 	struct ivi_surface *previous_active;
@@ -328,5 +329,9 @@ ivi_layout_split_committed(struct ivi_surface *surface);
 
 void
 ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id);
+
+void
+ivi_layout_desktop_resize(struct ivi_surface *surface,
+			  struct weston_geometry area);
 
 #endif

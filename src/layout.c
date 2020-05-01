@@ -322,6 +322,26 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 }
 
 void
+ivi_layout_desktop_resize(struct ivi_surface *surface,
+			  struct weston_geometry area)
+{
+	struct weston_desktop_surface *dsurf = surface->dsurface;
+	struct weston_view *view = surface->view;
+
+	int x = area.x;
+	int y = area.y;
+	int width = area.width;
+	int height = area.height;
+
+	weston_desktop_surface_set_size(dsurf,
+					width, height);
+
+	weston_view_set_position(view, x, y);
+	weston_view_update_transform(view);
+	weston_view_damage_below(view);
+}
+
+void
 ivi_layout_split_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
@@ -335,8 +355,9 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	struct weston_view *view = surface->view;
 	struct weston_geometry geom;
-	int x;
-	int y;
+
+	int x, y;
+	int width, height;
 
 	x = woutput->x;
 	y = woutput->y;
@@ -345,27 +366,56 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 		return;
 
 	geom = weston_desktop_surface_get_geometry(dsurface);
-	weston_log("(split) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
-			geom.width, geom.height);
 
 	assert(surface->role == IVI_SURFACE_ROLE_SPLIT_H ||
 	       surface->role == IVI_SURFACE_ROLE_SPLIT_V);
 
-	weston_view_set_output(view, woutput);
+	/* save the previous area in order to recover it back when if this kind
+	 * of surface is being destroyed/removed */
+	output->area_saved = output->area;
 
 	switch (surface->role) {
 	case IVI_SURFACE_ROLE_SPLIT_V:
+		if (geom.width == woutput->width &&
+		    geom.height == woutput->height)
+			geom.width = (output->area.width / 2);
+
 		x += woutput->width - geom.width;
 		output->area.width -= geom.width;
+
+		width = woutput->width - x;
+		height = output->area.height;
+		y = output->area.y;
+
 		break;
 	case IVI_SURFACE_ROLE_SPLIT_H:
+		if (geom.width == woutput->width &&
+		    geom.height == woutput->height)
+			geom.height = (output->area.height / 2);
+
+		y = output->area.y;
 		output->area.y += geom.height;
 		output->area.height -= geom.height;
+
+		width = output->area.width;
+		height = output->area.height;
+
+		x = output->area.x;
+
 		break;
 	default:
-		abort();
+		assert(!"Invalid split orientation\n");
 	}
 
+	weston_desktop_surface_set_size(dsurface,
+					width, height);
+
+	/* resize the active surface first, output->area already contains
+	 * correct area to resize to */
+	if (output->active)
+		ivi_layout_desktop_resize(output->active, output->area);
+
+	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, x, y);
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 
