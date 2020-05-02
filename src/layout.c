@@ -306,7 +306,7 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 	weston_log("(fs) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
 			geom.width, geom.height);
 
-	assert(surface->role == IVI_SURFACE_ROLE_FS);
+	assert(surface->role == IVI_SURFACE_ROLE_FULLSCREEN);
 
 	weston_desktop_surface_set_fullscreen(dsurface, true);
 
@@ -551,6 +551,24 @@ ivi_layout_panel_committed(struct ivi_surface *surface)
 	surface->view->is_mapped = true;
 }
 
+static bool
+ivi_layout_surface_is_split_or_fullscreen(struct ivi_surface *surf)
+{
+	struct ivi_compositor *ivi = surf->ivi;
+	struct ivi_surface *is;
+
+	if (surf->role != IVI_SURFACE_ROLE_SPLIT_H &&
+	    surf->role != IVI_SURFACE_ROLE_SPLIT_V &&
+	    surf->role != IVI_SURFACE_ROLE_FULLSCREEN)
+		return false;
+
+	wl_list_for_each(is, &ivi->surfaces, link)
+		if (is == surf)
+			return true;
+
+	return false;
+}
+
 void
 ivi_layout_activate(struct ivi_output *output, const char *app_id)
 {
@@ -579,8 +597,11 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		return;
 	}
 
-	if (surf == output->active)
+	/* do not 're'-activate surfaces that are split or active */
+	if (surf == output->active ||
+	    ivi_layout_surface_is_split_or_fullscreen(surf))
 		return;
+
 
 	dsurf = surf->dsurface;
 	view = surf->view;
