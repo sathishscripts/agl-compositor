@@ -1,6 +1,6 @@
 project('agl-compositor',
   'c',
-  version: '0.0.17',
+  version: '0.0.18',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
@@ -10,7 +10,7 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
-agl_compositor_version = '0.0.17'
+agl_compositor_version = '0.0.18'
 pkgconfig = import('pkgconfig')
 
 cc = meson.get_compiler('c')
