@@ -1170,7 +1170,7 @@ int main(int argc, char *argv[])
 
         log_scope = weston_compositor_add_log_scope(log_ctx, "log",
 						    "agl-compositor log\n",
-						    NULL, NULL);
+						    NULL, NULL, NULL);
 
 	log_file_open(log);
 	weston_log_set_handler(vlog, vlog_continue);
