@@ -107,12 +107,12 @@ endif
 dir_data = join_paths(prefix_path, get_option('datadir'))
 dir_data_agl_compositor = join_paths('agl-compositor', 'protocols')
 dir_data_pc = join_paths(dir_data, 'pkgconfig')
-libweston_dep = dependency('libweston-7')
+libweston_dep = dependency('libweston-8')
 
 deps_libweston = [
   dependency('wayland-server'),
   libweston_dep,
-  dependency('libweston-desktop-7'),
+  dependency('libweston-desktop-8'),
   local_dep,
 ]
 
