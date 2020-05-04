@@ -541,7 +541,7 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 	struct weston_config_section *section;
 	int use_current_mode = 0;
 	int use_pixman = 0;
-	int use_shadow;
+	bool use_shadow;
 	int ret;
 
 	const struct weston_option options[] = {
@@ -587,7 +587,7 @@ windowed_parse_common_options(struct ivi_compositor *ivi, int *argc, char *argv[
 			      bool *use_pixman, bool *fullscreen, int *output_count)
 {
 	struct weston_config_section *section;
-	int pixman;
+	bool pixman;
 	int fs = 0;
 
 	const struct weston_option options[] = {
@@ -798,8 +798,8 @@ compositor_init_config(struct weston_compositor *compositor,
 	struct xkb_rule_names xkb_names;
 	struct weston_config_section *section;
 	int repaint_msec;
-	int vt_switching;
-	int require_input;
+	bool vt_switching;
+	bool require_input;
 
 	/* agl-compositor.ini [keyboard] */
 	section = weston_config_get_section(config, "keyboard", NULL, NULL);
