@@ -1131,6 +1131,7 @@ int main(int argc, char *argv[])
 	struct weston_log_context *log_ctx = NULL;
 	struct weston_log_scope *log_scope;
 	struct weston_log_subscriber *logger;
+	int ret = EXIT_FAILURE;
 
 	const struct weston_option core_options[] = {
 		{ WESTON_OPTION_STRING, "backend", 'B', &backend },
@@ -1164,7 +1165,7 @@ int main(int argc, char *argv[])
 	log_ctx = weston_log_ctx_compositor_create();
 	if (!log_ctx) {
 		fprintf(stderr, "Failed to initialize weston debug framework.\n");
-		return EXIT_FAILURE;
+		return ret;
 	}
 
         log_scope = weston_compositor_add_log_scope(log_ctx, "log",
@@ -1254,6 +1255,8 @@ int main(int argc, char *argv[])
 
 	wl_display_run(display);
 
+	ret = ivi.compositor->exit_code;
+
 	wl_display_destroy_clients(display);
 
 error_compositor:
@@ -1279,4 +1282,6 @@ error_signals:
 	log_file_close();
 	if (ivi.config)
 		weston_config_destroy(ivi.config);
+
+	return ret;
 }
