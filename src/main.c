@@ -1128,7 +1128,6 @@ int main(int argc, char *argv[])
 	int version = 0;
 	int no_config = 0;
 	char *config_file = NULL;
-	int debug_protocol = 0;
 	struct weston_log_context *log_ctx = NULL;
 	struct weston_log_scope *log_scope;
 	struct weston_log_subscriber *logger;
@@ -1141,7 +1140,6 @@ int main(int argc, char *argv[])
 		{ WESTON_OPTION_BOOLEAN, "version", 0, &version },
 		{ WESTON_OPTION_BOOLEAN, "no-config", 0, &no_config },
 		{ WESTON_OPTION_STRING, "config", 'c', &config_file },
-		{ WESTON_OPTION_BOOLEAN, "debug", 0, &debug_protocol },
 	};
 
 	wl_list_init(&ivi.outputs);
