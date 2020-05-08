@@ -52,6 +52,9 @@
 
 #include "agl-shell-server-protocol.h"
 
+static int cached_tm_mday = -1;
+static struct weston_log_scope *log_scope;
+
 struct ivi_compositor *
 to_ivi_compositor(struct weston_compositor *ec)
 {
@@ -981,36 +984,45 @@ load_config(struct weston_config **config, bool no_config,
 
 static FILE *logfile;
 
-static int
-log_timestamp(void)
+static char *
+log_timestamp(char *buf, size_t len)
 {
-	static int cached_tm_mday = -1;
-	struct timespec ts;
-	struct tm brokendown_time;
-	char buf[128];
+	struct timeval tv;
+	struct tm *brokendown_time;
+	char datestr[128];
+	char timestr[128];
 
-	clock_gettime(CLOCK_REALTIME, &ts);
-	if (!localtime_r(&ts.tv_sec, &brokendown_time))
-		return fprintf(logfile, "[(NULL)localtime] ");
+	gettimeofday(&tv, NULL);
 
-	if (brokendown_time.tm_mday != cached_tm_mday) {
-		strftime(buf, sizeof buf, "%Y-%m-%d %Z", &brokendown_time);
-		fprintf(logfile, "Date: %s\n", buf);
-
-		cached_tm_mday = brokendown_time.tm_mday;
+	brokendown_time = localtime(&tv.tv_sec);
+	if (brokendown_time == NULL) {
+		snprintf(buf, len, "%s", "[(NULL)localtime] ");
+		return buf;
 	}
 
-	strftime(buf, sizeof buf, "%H:%M:%S", &brokendown_time);
+	memset(datestr, 0, sizeof(datestr));
+	if (brokendown_time->tm_mday != cached_tm_mday) {
+		strftime(datestr, sizeof(datestr), "Date: %Y-%m-%d %Z\n",
+				brokendown_time);
+		cached_tm_mday = brokendown_time->tm_mday;
+	}
 
-	return fprintf(logfile, "[%s.%03ld] ", buf, ts.tv_nsec / 1000000);
+	strftime(timestr, sizeof(timestr), "%H:%M:%S", brokendown_time);
+	/* if datestr is empty it prints only timestr*/
+	snprintf(buf, len, "%s[%s.%03li]", datestr,
+			timestr, (tv.tv_usec / 1000));
+
+	return buf;
 }
 
 static void
 custom_handler(const char *fmt, va_list arg)
 {
-	log_timestamp();
-	fprintf(logfile, "libwayland: ");
-	vfprintf(logfile, fmt, arg);
+	char timestr[512];
+
+	weston_log_scope_printf(log_scope, "%s libwayland: ",
+			log_timestamp(timestr, sizeof(timestr)));
+	weston_log_scope_vprintf(log_scope, fmt, arg);
 }
 
 static void
@@ -1040,18 +1052,33 @@ log_file_close(void)
 static int
 vlog(const char *fmt, va_list ap)
 {
-	int l;
+	const char *oom = "Out of memory";
+	char timestr[128];
+	int len = 0;
+	char *str;
 
-	l = log_timestamp();
-	l += vfprintf(logfile, fmt, ap);
+	if (weston_log_scope_is_enabled(log_scope)) {
+		int len_va;
+		char *xlog_timestamp = log_timestamp(timestr, sizeof(timestr));
+		len_va = vasprintf(&str, fmt, ap);
+		if (len_va >= 0) {
+			len = weston_log_scope_printf(log_scope, "%s %s",
+					xlog_timestamp, str);
+			free(str);
+		} else {
+			len = weston_log_scope_printf(log_scope, "%s %s",
+					xlog_timestamp, oom);
+		}
+	}
 
-	return l;
+	return len;
 }
+
 
 static int
 vlog_continue(const char *fmt, va_list ap)
 {
-	return vfprintf(logfile, fmt, ap);
+	return weston_log_scope_vprintf(log_scope, fmt, ap);
 }
 
 static int
@@ -1129,7 +1156,6 @@ int main(int argc, char *argv[])
 	int no_config = 0;
 	char *config_file = NULL;
 	struct weston_log_context *log_ctx = NULL;
-	struct weston_log_scope *log_scope;
 	struct weston_log_subscriber *logger;
 	int ret = EXIT_FAILURE;
 
