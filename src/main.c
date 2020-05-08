@@ -1177,6 +1177,7 @@ int main(int argc, char *argv[])
 	weston_log_set_handler(vlog, vlog_continue);
 
 	logger = weston_log_subscriber_create_log(logfile);
+	weston_log_subscribe(log_ctx, logger, "log");
 
 	if (load_config(&ivi.config, no_config, config_file) < 0)
 		goto error_signals;
