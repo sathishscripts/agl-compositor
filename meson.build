@@ -11,6 +11,7 @@ project('agl-compositor',
 
 config_h = configuration_data()
 agl_compositor_version = '0.0.18'
+libweston_version = 'libweston-8'
 pkgconfig = import('pkgconfig')
 
 cc = meson.get_compiler('c')
@@ -107,7 +108,7 @@ endif
 dir_data = join_paths(prefix_path, get_option('datadir'))
 dir_data_agl_compositor = join_paths('agl-compositor', 'protocols')
 dir_data_pc = join_paths(dir_data, 'pkgconfig')
-libweston_dep = dependency('libweston-8')
+libweston_dep = dependency(libweston_version)
 
 deps_libweston = [
   dependency('wayland-server'),
@@ -138,9 +139,9 @@ srcs_agl_compositor = [
 # includes that can't be detected via pkg-config and passed via dependencies.
 if libweston_dep.found()
   if not prefix_path.contains('/usr')
-    dir_path_x11_backend = join_paths(prefix_path, 'include', 'libweston-7', 'libweston', 'backend-x11.h')
+    dir_path_x11_backend = join_paths(prefix_path, 'include', libweston_version, 'libweston', 'backend-x11.h')
   else
-    dir_path_x11_backend = join_paths('libweston-7', 'libweston', 'backend-x11.h')
+    dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-x11.h')
   endif
 
   # do the test
