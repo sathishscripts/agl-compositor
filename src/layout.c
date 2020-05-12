@@ -327,7 +327,6 @@ ivi_layout_popup_re_add(struct ivi_surface *surface)
 {
 	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
 	struct weston_view *view = surface->view;
-	struct ivi_compositor *ivi = surface->ivi;
 
 	if (weston_view_is_mapped(view)) {
 		struct weston_desktop_surface *dsurface = surface->dsurface;
