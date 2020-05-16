@@ -276,8 +276,10 @@ ivi_check_pending_desktop_surface(struct ivi_surface *surface)
 		return;
 	}
 
-	/* if we end up here means we have a regular desktop app */
+	/* if we end up here means we have a regular desktop app and
+	 * try to activate it */
 	ivi_set_desktop_surface(surface);
+	ivi_layout_desktop_committed(surface);
 }
 
 void
@@ -525,13 +527,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
 		wl_list_remove(&surface->link);
-
-		if (ivi_check_pending_desktop_surface_popup(surface)) {
-			ivi_set_desktop_surface_popup(surface);
-		} else {
-			ivi_set_desktop_surface(surface);
-			ivi_layout_desktop_committed(surface);
-		}
+		ivi_check_pending_desktop_surface(surface);
 	}
 }
 
