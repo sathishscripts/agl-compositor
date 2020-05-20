@@ -216,6 +216,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 	/* force repaint of the entire output */
 	weston_output_damage(output->output);
+
 	surf->desktop.last_output = surf->desktop.pending_output;
 	surf->desktop.pending_output = NULL;
 }
@@ -234,19 +235,48 @@ ivi_layout_find_bg_output(struct ivi_compositor *ivi)
 	return NULL;
 }
 
+static struct ivi_output *
+ivi_layout_get_output_from_surface(struct ivi_surface *surf)
+{
+	struct ivi_output *ivi_output = NULL;
+
+	switch (surf->role) {
+	case IVI_SURFACE_ROLE_DESKTOP:
+		if (surf->desktop.pending_output)
+			ivi_output = surf->desktop.pending_output;
+		else
+			ivi_output = surf->desktop.last_output;
+		break;
+	case IVI_SURFACE_ROLE_POPUP:
+		ivi_output = surf->popup.output;
+		break;
+	case IVI_SURFACE_ROLE_REMOTE:
+		ivi_output = surf->remote.output;
+		break;
+	default:
+	case IVI_SURFACE_ROLE_BACKGROUND:
+	case IVI_SURFACE_ROLE_PANEL:
+	case IVI_SURFACE_ROLE_NONE:
+		break;
+	}
+
+	return ivi_output;
+}
+
 void
 ivi_layout_desktop_committed(struct ivi_surface *surf)
 {
 	struct weston_desktop_surface *dsurf = surf->dsurface;
 	struct weston_geometry geom = weston_desktop_surface_get_geometry(dsurf);
 	struct ivi_output *output;
+	struct ivi_policy *policy = surf->ivi->policy;
 
-	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP);
+	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP ||
+	       surf->role == IVI_SURFACE_ROLE_REMOTE);
 
-	output = surf->desktop.pending_output;
+	output = ivi_layout_get_output_from_surface(surf);
 	if (!output) {
 		struct ivi_output *ivi_bg_output;
-		struct ivi_policy *policy = surf->ivi->policy;
 
 		if (policy && policy->api.surface_activate_by_default)
 			if (policy->api.surface_activate_by_default(surf, surf->ivi))
@@ -273,6 +303,30 @@ skip_config_check:
 			}
 		}
 
+		return;
+	}
+
+	if (surf->role == IVI_SURFACE_ROLE_REMOTE && output) {
+		const char *app_id;
+
+		if (policy && policy->api.surface_activate_by_default &&
+		    !policy->api.surface_activate_by_default(surf, surf->ivi))
+			return;
+
+		app_id = weston_desktop_surface_get_app_id(dsurf);
+		if (app_id) {
+			ivi_layout_activate(output, app_id);
+
+			/* we transition to the desktop role from remote one,
+			 * as they're basically one and the same, but in order
+			 * to keep the same functionality (that is to display
+			 * it by default when starting), we need to know the
+			 * output before hand, fact that that is not true for,
+			 * regular desktop ones.
+			 */
+			surf->role = IVI_SURFACE_ROLE_DESKTOP;
+			surf->activated_by_default = true;
+		}
 		return;
 	}
 
@@ -320,6 +374,7 @@ ivi_layout_fs_committed(struct ivi_surface *surface)
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
 }
+
 
 void
 ivi_layout_desktop_resize(struct ivi_surface *surface,
@@ -634,31 +689,6 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		/* force repaint of the entire output */
 		weston_output_damage(output->output);
 	}
-}
-
-static struct ivi_output *
-ivi_layout_get_output_from_surface(struct ivi_surface *surf)
-{
-	struct ivi_output *ivi_output = NULL;
-
-	switch (surf->role) {
-	case IVI_SURFACE_ROLE_DESKTOP:
-		if (surf->desktop.pending_output)
-			ivi_output = surf->desktop.pending_output;
-		else
-			ivi_output = surf->desktop.last_output;
-		break;
-	case IVI_SURFACE_ROLE_POPUP:
-		ivi_output = surf->popup.output;
-		break;
-	default:
-	case IVI_SURFACE_ROLE_BACKGROUND:
-	case IVI_SURFACE_ROLE_PANEL:
-	case IVI_SURFACE_ROLE_NONE:
-		break;
-	}
-
-	return ivi_output;
 }
 
 void

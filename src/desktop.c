@@ -168,6 +168,7 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 
 	switch (surface->role) {
 	case IVI_SURFACE_ROLE_DESKTOP:
+	case IVI_SURFACE_ROLE_REMOTE:
 		ivi_layout_desktop_committed(surface);
 		break;
 	case IVI_SURFACE_ROLE_PANEL:

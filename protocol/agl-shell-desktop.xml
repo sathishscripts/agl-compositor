@@ -37,6 +37,7 @@
       <entry name="fullscreen" value="1"/>
       <entry name="split_vertical" value="2"/>
       <entry name="split_horizontal" value="3"/>
+      <entry name="remote" value="4"/>
     </enum>
 
     <enum name="app_state">
