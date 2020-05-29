@@ -61,6 +61,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_desktop_client *dclient;
 	struct wl_client *client;
 	struct ivi_surface *surface;
+	const char *app_id = NULL;
 
 	dclient = weston_desktop_surface_get_client(dsurface);
 	client = weston_desktop_client_get_client(dclient);
@@ -92,14 +93,20 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
+	app_id = weston_desktop_surface_get_app_id(dsurface);
+
 	if (ivi->shell_client.ready) {
 		ivi_check_pending_desktop_surface(surface);
+		weston_log("Added surface %p, app_id %s, role %s\n", surface,
+				app_id, ivi_layout_get_surface_role_name(surface));
 	} else {
 		/*
 		 * We delay creating "normal" desktop surfaces until later, to
 		 * give the shell-client an oppurtunity to set the surface as a
 		 * background/panel.
 		 */
+		weston_log("Added surface %p, app_id %s to pending list\n",
+				surface, app_id);
 		wl_list_insert(&ivi->pending_surfaces, &surface->link);
 	}
 }
@@ -182,6 +189,9 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		output->background = NULL;
 	}
 
+	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
+			weston_desktop_surface_get_app_id(dsurface),
+			ivi_layout_get_surface_role_name(surface));
 	wl_list_remove(&surface->link);
 	free(surface);
 }

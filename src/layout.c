@@ -25,6 +25,7 @@
 
 #include "ivi-compositor.h"
 #include "policy.h"
+#include "shared/helpers.h"
 
 #include <assert.h>
 #include <string.h>
@@ -35,6 +36,27 @@
 #include "agl-shell-desktop-server-protocol.h"
 
 #define AGL_COMP_DEBUG
+
+static const char *ivi_roles_as_string[] = {
+	[IVI_SURFACE_ROLE_NONE]		= "NONE",
+	[IVI_SURFACE_ROLE_BACKGROUND]	= "BACKGROUND",
+	[IVI_SURFACE_ROLE_PANEL]	= "PANEL",
+	[IVI_SURFACE_ROLE_DESKTOP]	= "DESKTOP",
+	[IVI_SURFACE_ROLE_POPUP]	= "POPUP",
+	[IVI_SURFACE_ROLE_SPLIT_H]	= "SPLIT_H",
+	[IVI_SURFACE_ROLE_SPLIT_V]	= "SPLIT_V",
+	[IVI_SURFACE_ROLE_FULLSCREEN]	= "FULLSCREEN",
+	[IVI_SURFACE_ROLE_REMOTE]	= "REMOTE",
+};
+
+const char *
+ivi_layout_get_surface_role_name(struct ivi_surface *surf)
+{
+	if (surf->role < 0 || surf->role >= ARRAY_LENGTH(ivi_roles_as_string))
+		return " unknown surface role";
+
+	return ivi_roles_as_string[surf->role];
+}
 
 static void
 ivi_background_init(struct ivi_compositor *ivi, struct ivi_output *output)
@@ -85,7 +107,7 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 	view = panel->view;
 	geom = weston_desktop_surface_get_geometry(dsurface);
 #ifdef AGL_COMP_DEBUG
-	weston_log("geom.width %d, geom.height %d, geom.x %d, geom.y %d\n",
+	weston_log("(panel) geom.width %d, geom.height %d, geom.x %d, geom.y %d\n",
 			geom.width, geom.height, geom.x, geom.y);
 #endif
 	switch (panel->panel.edge) {
@@ -227,6 +249,10 @@ ivi_layout_activate_complete(struct ivi_output *output,
 			surf->desktop.last_output = surf->desktop.pending_output;
 		surf->desktop.pending_output = NULL;
 	}
+
+	weston_log("Activation completed for app_id %s, role %s\n",
+			weston_desktop_surface_get_app_id(surf->dsurface),
+			ivi_layout_get_surface_role_name(surf));
 }
 
 static struct ivi_output *
@@ -285,6 +311,9 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			const char *app_id =
 				weston_desktop_surface_get_app_id(dsurf);
 			if (app_id && ivi_bg_output) {
+				weston_log("Surface with app_id %s, role %s activating by default\n",
+					weston_desktop_surface_get_app_id(surf->dsurface),
+					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate(ivi_bg_output, app_id);
 				surf->activated_by_default = true;
 			}
@@ -309,6 +338,9 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 
 		app_id = weston_desktop_surface_get_app_id(dsurf);
 		if (app_id) {
+			weston_log("Surface with app_id %s, role %s activating by default\n",
+					weston_desktop_surface_get_app_id(surf->dsurface),
+					ivi_layout_get_surface_role_name(surf));
 			ivi_layout_activate(output, app_id);
 			surf->activated_by_default = true;
 		}
@@ -484,7 +516,7 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 		return;
 
 	geom = weston_desktop_surface_get_geometry(dsurface);
-	weston_log("geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
+	weston_log("(popup) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
 			geom.width, geom.height);
 
 	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
@@ -628,7 +660,8 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	}
 
 #ifdef AGL_COMP_DEBUG
-	weston_log("Found app_id %s\n", app_id);
+	weston_log("Activating app_id %s, type %s\n", app_id,
+			ivi_layout_get_surface_role_name(surf));
 #endif
 
 	if (surf->role == IVI_SURFACE_ROLE_POPUP) {
@@ -660,6 +693,9 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 					output->area.width,
 					output->area.height);
 
+	weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
+			app_id, ivi_layout_get_surface_role_name(surf),
+			output->area.width, output->area.height);
 	/*
 	 * If the view isn't mapped, we put it onto the hidden layer so it will
 	 * start receiving frame events, and will be able to act on our
@@ -672,6 +708,9 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 		weston_view_set_output(view, output->output);
 		weston_layer_entry_insert(&ivi->hidden.view_list, &view->layer_link);
 		/* force repaint of the entire output */
+
+		weston_log("Placed app_id %s, type %s in hidden layer\n",
+				app_id, ivi_layout_get_surface_role_name(surf));
 		weston_output_damage(output->output);
 	}
 }
@@ -732,7 +771,8 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 	}
 
 	ivi_output = ivi_layout_get_output_from_surface(surf);
-	weston_log("deactiving %s\n", app_id);
+	weston_log("Deactiving %s, role %s\n", app_id,
+			ivi_layout_get_surface_role_name(surf));
 
 	if (surf->role == IVI_SURFACE_ROLE_DESKTOP) {
 		struct ivi_surface *previous_active;
