@@ -216,8 +216,17 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 	/* force repaint of the entire output */
 	weston_output_damage(output->output);
-	surf->desktop.last_output = surf->desktop.pending_output;
-	surf->desktop.pending_output = NULL;
+
+	/*
+	 * the 'remote' role now makes use of this part so make sure we don't
+	 * trip the enum such that we might end up with a modified output for
+	 * 'remote' role
+	 */
+	if (surf->role == IVI_SURFACE_ROLE_DESKTOP) {
+		if (surf->desktop.pending_output)
+			surf->desktop.last_output = surf->desktop.pending_output;
+		surf->desktop.pending_output = NULL;
+	}
 }
 
 static struct ivi_output *
@@ -239,14 +248,26 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 {
 	struct weston_desktop_surface *dsurf = surf->dsurface;
 	struct weston_geometry geom = weston_desktop_surface_get_geometry(dsurf);
+	struct ivi_policy *policy = surf->ivi->policy;
 	struct ivi_output *output;
 
-	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP);
+	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP ||
+	       surf->role == IVI_SURFACE_ROLE_REMOTE);
 
-	output = surf->desktop.pending_output;
-	if (!output) {
+	/*
+	 * we can't make use here of the ivi_layout_get_output_from_surface()
+	 * due to the fact that we'll always land here when a surface performs
+	 * a commit and pending_output will not bet set. This works in tandem
+	 * with 'activated_by_default' at this point to avoid tripping over
+	 * to a surface that continuously updates its content
+	 */
+	if (surf->role == IVI_SURFACE_ROLE_DESKTOP)
+		output = surf->desktop.pending_output;
+	else
+		output = surf->remote.output;
+
+	if (surf->role == IVI_SURFACE_ROLE_DESKTOP && !output) {
 		struct ivi_output *ivi_bg_output;
-		struct ivi_policy *policy = surf->ivi->policy;
 
 		if (policy && policy->api.surface_activate_by_default &&
 		    !policy->api.surface_activate_by_default(surf, surf->ivi))
@@ -269,6 +290,28 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			}
 		}
 
+		return;
+	}
+
+	if (surf->role == IVI_SURFACE_ROLE_REMOTE && output) {
+		const char *app_id;
+		if (policy && policy->api.surface_activate_by_default &&
+		    !policy->api.surface_activate_by_default(surf, surf->ivi))
+			return;
+
+		/* we can only activate it again by using the protocol, but
+		 * additionally the output is not reset when
+		 * ivi_layout_activate_complete() terminates so we use the
+		 * current active surface to avoid hitting this again and again
+		 * */
+		if (surf->activated_by_default && output->active == surf)
+			return;
+
+		app_id = weston_desktop_surface_get_app_id(dsurf);
+		if (app_id) {
+			ivi_layout_activate(output, app_id);
+			surf->activated_by_default = true;
+		}
 		return;
 	}
 
@@ -603,7 +646,8 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	view = surf->view;
 	geom = weston_desktop_surface_get_geometry(dsurf);
 
-	surf->desktop.pending_output = output;
+	if (surf->role == IVI_SURFACE_ROLE_DESKTOP)
+		surf->desktop.pending_output = output;
 	if (weston_desktop_surface_get_maximized(dsurf) &&
 	    geom.width == output->area.width &&
 	    geom.height == output->area.height) {
@@ -659,6 +703,9 @@ ivi_layout_get_output_from_surface(struct ivi_surface *surf)
 	case IVI_SURFACE_ROLE_SPLIT_H:
 	case IVI_SURFACE_ROLE_SPLIT_V:
 		ivi_output = surf->split.output;
+		break;
+	case IVI_SURFACE_ROLE_REMOTE:
+		ivi_output = surf->remote.output;
 		break;
 	case IVI_SURFACE_ROLE_NONE:
 	default:
