@@ -248,14 +248,10 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		struct ivi_output *ivi_bg_output;
 		struct ivi_policy *policy = surf->ivi->policy;
 
-		if (policy && policy->api.surface_activate_by_default)
-			if (policy->api.surface_activate_by_default(surf, surf->ivi))
-				goto skip_config_check;
-
-		if (!surf->ivi->quirks.activate_apps_by_default)
+		if (policy && policy->api.surface_activate_by_default &&
+		    !policy->api.surface_activate_by_default(surf, surf->ivi))
 			return;
 
-skip_config_check:
 		/* we can only activate it again by using the protocol */
 		if (surf->activated_by_default)
 			return;

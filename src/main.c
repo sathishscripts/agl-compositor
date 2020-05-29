@@ -1126,20 +1126,6 @@ usage(int error_code)
 	exit(error_code);
 }
 
-static void
-ivi_compositor_get_quirks(struct ivi_compositor *ivi)
-{
-	struct weston_config_section *section;
-
-	if (!ivi->config)
-		return;
-
-	section = weston_config_get_section(ivi->config, "shell", NULL, NULL);
-	weston_config_section_get_bool(section, "activate-by-default",
-			&ivi->quirks.activate_apps_by_default, 0);
-
-}
-
 int main(int argc, char *argv[])
 {
 	struct ivi_compositor ivi = { 0 };
@@ -1216,8 +1202,6 @@ int main(int argc, char *argv[])
 		if (!backend)
 			backend = choose_default_backend();
 	}
-
-	ivi_compositor_get_quirks(&ivi);
 
 	display = wl_display_create();
 	loop = wl_display_get_event_loop(display);
