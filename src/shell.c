@@ -87,6 +87,19 @@ ivi_set_desktop_surface_fullscreen(struct ivi_surface *surface)
 }
 
 static void
+ivi_set_desktop_surface_remote(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_NONE);
+
+	/* remote type are the same as desktop just that client can tell
+	 * the compositor to start on another output */
+	surface->role = IVI_SURFACE_ROLE_REMOTE;
+	wl_list_insert(&ivi->surfaces, &surface->link);
+}
+
+
+static void
 ivi_set_desktop_surface_split(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
@@ -166,6 +179,24 @@ ivi_set_pending_desktop_surface_split(struct ivi_output *ioutput,
 }
 
 static void
+ivi_set_pending_desktop_surface_remote(struct ivi_output *ioutput,
+		const char *app_id)
+{
+	struct ivi_compositor *ivi = ioutput->ivi;
+	size_t len_app_id = strlen(app_id);
+
+	struct pending_remote *remote = zalloc(sizeof(*remote));
+
+	remote->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(remote->app_id, app_id, len_app_id);
+
+	remote->ioutput = ioutput;
+
+	wl_list_insert(&ivi->remote_pending_apps, &remote->link);
+}
+
+
+static void
 ivi_remove_pending_desktop_surface_split(struct pending_split *split)
 {
 	free(split->app_id);
@@ -187,6 +218,14 @@ ivi_remove_pending_desktop_surface_popup(struct pending_popup *p_popup)
 	free(p_popup->app_id);
 	wl_list_remove(&p_popup->link);
 	free(p_popup);
+}
+
+static void
+ivi_remove_pending_desktop_surface_remote(struct pending_remote *remote)
+{
+	free(remote->app_id);
+	wl_list_remove(&remote->link);
+	free(remote);
 }
 
 static bool
@@ -261,6 +300,30 @@ ivi_check_pending_desktop_surface_fullscreen(struct ivi_surface *surface)
 	return false;
 }
 
+static bool
+ivi_check_pending_desktop_surface_remote(struct ivi_surface *surface)
+{
+	struct pending_remote *remote_surf, *next_remote_surf;
+	struct ivi_compositor *ivi = surface->ivi;
+	const char *_app_id =
+		weston_desktop_surface_get_app_id(surface->dsurface);
+
+	if (wl_list_empty(&ivi->remote_pending_apps))
+		return false;
+
+	wl_list_for_each_safe(remote_surf, next_remote_surf,
+			      &ivi->remote_pending_apps, link) {
+		if (!strcmp(_app_id, remote_surf->app_id)) {
+			surface->remote.output = remote_surf->ioutput;
+			ivi_remove_pending_desktop_surface_remote(remote_surf);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 void
 ivi_check_pending_desktop_surface(struct ivi_surface *surface)
 {
@@ -281,6 +344,12 @@ ivi_check_pending_desktop_surface(struct ivi_surface *surface)
 	ret = ivi_check_pending_desktop_surface_fullscreen(surface);
 	if (ret) {
 		ivi_set_desktop_surface_fullscreen(surface);
+		return;
+	}
+
+	ret = ivi_check_pending_desktop_surface_remote(surface);
+	if (ret) {
+		ivi_set_desktop_surface_remote(surface);
 		return;
 	}
 
@@ -766,6 +835,9 @@ shell_desktop_set_app_property(struct wl_client *client,
 	case AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_VERTICAL:
 	case AGL_SHELL_DESKTOP_APP_ROLE_SPLIT_HORIZONTAL:
 		ivi_set_pending_desktop_surface_split(output, app_id, role);
+		break;
+	case AGL_SHELL_DESKTOP_APP_ROLE_REMOTE:
+		ivi_set_pending_desktop_surface_remote(output, app_id);
 		break;
 	default:
 		break;

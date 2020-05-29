@@ -91,6 +91,7 @@ struct ivi_compositor {
 	struct wl_list popup_pending_apps;
 	struct wl_list fullscreen_pending_apps;
 	struct wl_list split_pending_apps;
+	struct wl_list remote_pending_apps;
 
 	struct weston_layer hidden;
 	struct weston_layer background;
@@ -149,6 +150,7 @@ enum ivi_surface_role {
 	IVI_SURFACE_ROLE_FULLSCREEN,
 	IVI_SURFACE_ROLE_SPLIT_V,
 	IVI_SURFACE_ROLE_SPLIT_H,
+	IVI_SURFACE_ROLE_REMOTE,
 };
 
 struct pending_popup {
@@ -170,6 +172,12 @@ struct pending_split {
 	char *app_id;
 	uint32_t orientation;
 	struct wl_list link;	/** ivi_compositor::split_pending_apps */
+};
+
+struct pending_remote {
+	struct ivi_output *ioutput;
+	char *app_id;
+	struct wl_list link;    /** ivi_compositor::remote_pending_apps */
 };
 
 struct ivi_desktop_surface {
@@ -194,6 +202,10 @@ struct ivi_fullscreen_surface {
 struct ivi_split_surface {
 	struct ivi_output *output;
 	uint32_t orientation;
+};
+
+struct ivi_remote_surface {
+	struct ivi_output *output;
 };
 
 struct ivi_panel_surface {
@@ -229,6 +241,7 @@ struct ivi_surface {
 		struct ivi_popup_surface popup;
 		struct ivi_fullscreen_surface fullscreen;
 		struct ivi_split_surface split;
+		struct ivi_remote_surface remote;
 	};
 };
 
