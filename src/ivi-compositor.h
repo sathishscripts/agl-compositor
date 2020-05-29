@@ -347,4 +347,10 @@ ivi_layout_desktop_resize(struct ivi_surface *surface,
 struct ivi_output *
 ivi_layout_get_output_from_surface(struct ivi_surface *surf);
 
+void
+insert_black_surface(struct ivi_output *output);
+
+void
+remove_black_surface(struct ivi_output *output);
+
 #endif
