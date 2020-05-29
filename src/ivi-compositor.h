@@ -353,4 +353,7 @@ insert_black_surface(struct ivi_output *output);
 void
 remove_black_surface(struct ivi_output *output);
 
+const char *
+ivi_layout_get_surface_role_name(struct ivi_surface *surf);
+
 #endif
