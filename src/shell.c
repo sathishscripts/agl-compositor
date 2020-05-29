@@ -45,9 +45,6 @@
 static void
 create_black_surface_view(struct ivi_output *output);
 
-static void
-insert_black_surface(struct ivi_output *output);
-
 void
 ivi_set_desktop_surface(struct ivi_surface *surface)
 {
@@ -90,11 +87,22 @@ static void
 ivi_set_desktop_surface_remote(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct weston_view *view;
+	struct ivi_output *output = surface->remote.output;
+
 	assert(surface->role == IVI_SURFACE_ROLE_NONE);
 
 	/* remote type are the same as desktop just that client can tell
 	 * the compositor to start on another output */
 	surface->role = IVI_SURFACE_ROLE_REMOTE;
+
+	/* if thew black surface view is mapped on the mean we need
+	 * to remove it in order to start showing the 'remote' surface
+	 * just being added */
+	view = output->fullscreen_view.fs->view;
+	if (view->is_mapped || view->surface->is_mapped)
+		remove_black_surface(output);
+
 	wl_list_insert(&ivi->surfaces, &surface->link);
 }
 
@@ -548,7 +556,7 @@ create_black_surface_view(struct ivi_output *output)
 		      &output->fullscreen_view.fs_destroy);
 }
 
-static void
+void
 remove_black_surface(struct ivi_output *output)
 {
 	struct weston_view *view = output->fullscreen_view.fs->view;
@@ -565,7 +573,7 @@ remove_black_surface(struct ivi_output *output)
 	weston_output_damage(output->output);
 }
 
-static void
+void
 insert_black_surface(struct ivi_output *output)
 {
 	struct weston_view *view = output->fullscreen_view.fs->view;
