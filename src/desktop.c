@@ -112,19 +112,8 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 
-	struct ivi_output *output;
-
-	if (surface->role == IVI_SURFACE_ROLE_DESKTOP)
-		output = surface->desktop.last_output;
-	else if (surface->role == IVI_SURFACE_ROLE_POPUP)
-		output = surface->popup.output;
-	else if (surface->role == IVI_SURFACE_ROLE_SPLIT_H ||
-		 surface->role == IVI_SURFACE_ROLE_SPLIT_V)
-		output = surface->split.output;
-	else if (surface->role == IVI_SURFACE_ROLE_FULLSCREEN)
-		output = surface->fullscreen.output;
-	else
-		return;
+	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
+	assert(output != NULL);
 
 	/* resize the active surface to the original size */
 	if (surface->role == IVI_SURFACE_ROLE_SPLIT_H ||

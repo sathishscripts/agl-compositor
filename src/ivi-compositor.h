@@ -334,4 +334,7 @@ void
 ivi_layout_desktop_resize(struct ivi_surface *surface,
 			  struct weston_geometry area);
 
+struct ivi_output *
+ivi_layout_get_output_from_surface(struct ivi_surface *surf);
+
 #endif

@@ -636,7 +636,7 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	}
 }
 
-static struct ivi_output *
+struct ivi_output *
 ivi_layout_get_output_from_surface(struct ivi_surface *surf)
 {
 	struct ivi_output *ivi_output = NULL;
@@ -651,10 +651,21 @@ ivi_layout_get_output_from_surface(struct ivi_surface *surf)
 	case IVI_SURFACE_ROLE_POPUP:
 		ivi_output = surf->popup.output;
 		break;
-	default:
 	case IVI_SURFACE_ROLE_BACKGROUND:
+		ivi_output = surf->bg.output;
+		break;
 	case IVI_SURFACE_ROLE_PANEL:
+		ivi_output = surf->panel.output;
+		break;
+	case IVI_SURFACE_ROLE_FULLSCREEN:
+		ivi_output = surf->fullscreen.output;
+		break;
+	case IVI_SURFACE_ROLE_SPLIT_H:
+	case IVI_SURFACE_ROLE_SPLIT_V:
+		ivi_output = surf->split.output;
+		break;
 	case IVI_SURFACE_ROLE_NONE:
+	default:
 		break;
 	}
 
