@@ -136,6 +136,29 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_view_destroy(surface->view);
 	}
 
+	/* invalidate agl-shell surfaces so we can re-use them when
+	 * binding again */
+	if (surface->role == IVI_SURFACE_ROLE_PANEL) {
+		switch (surface->panel.edge) {
+		case AGL_SHELL_EDGE_TOP:
+			output->top = NULL;
+			break;
+		case AGL_SHELL_EDGE_BOTTOM:
+			output->bottom = NULL;
+			break;
+		case AGL_SHELL_EDGE_LEFT:
+			output->left = NULL;
+			break;
+		case AGL_SHELL_EDGE_RIGHT:
+			output->right = NULL;
+			break;
+		default:
+			assert(!"Invalid edge detected\n");
+		}
+	} else if (surface->role == IVI_SURFACE_ROLE_BACKGROUND) {
+		output->background = NULL;
+	}
+
 	wl_list_remove(&surface->link);
 	free(surface);
 }

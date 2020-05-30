@@ -617,21 +617,6 @@ unbind_agl_shell(struct wl_resource *resource)
 
 	ivi = wl_resource_get_user_data(resource);
 	wl_list_for_each(output, &ivi->outputs, link) {
-		free(output->background);
-		output->background = NULL;
-
-		free(output->top);
-		output->top = NULL;
-
-		free(output->bottom);
-		output->bottom = NULL;
-
-		free(output->left);
-		output->left = NULL;
-
-		free(output->right);
-		output->right = NULL;
-
 		/* reset the active surf if there's one present */
 		if (output->active) {
 			output->active->view->is_mapped = false;
