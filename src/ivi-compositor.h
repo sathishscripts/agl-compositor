@@ -328,9 +328,6 @@ void
 ivi_layout_desktop_committed(struct ivi_surface *surf);
 
 void
-ivi_layout_panel_committed(struct ivi_surface *surface);
-
-void
 ivi_layout_popup_committed(struct ivi_surface *surface);
 
 void
