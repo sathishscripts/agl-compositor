@@ -46,6 +46,7 @@
 #include <libweston/windowed-output-api.h>
 #include <libweston/config-parser.h>
 #include <libweston/weston-log.h>
+#include <weston/weston.h>
 
 #include "shared/os-compatibility.h"
 #include "shared/helpers.h"
@@ -85,6 +86,20 @@ to_ivi_output(struct weston_output *o)
 	return output;
 }
 
+static void
+ivi_output_configure_app_id(struct ivi_output *ivi_output)
+{
+	if (ivi_output->config) {
+		if (ivi_output->app_id != NULL)
+			return;
+
+		weston_config_section_get_string(ivi_output->config,
+						 "agl-shell-app-id",
+						 &ivi_output->app_id,
+						 NULL);
+	}
+}
+
 static struct ivi_output *
 ivi_ensure_output(struct ivi_compositor *ivi, char *name,
 		  struct weston_config_section *config)
@@ -119,6 +134,7 @@ ivi_ensure_output(struct ivi_compositor *ivi, char *name,
 					   &output->output_destroy);
 
 	wl_list_insert(&ivi->outputs, &output->link);
+	ivi_output_configure_app_id(output);
 	return output;
 }
 
