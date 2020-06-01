@@ -256,6 +256,23 @@ ivi_layout_activate_complete(struct ivi_output *output,
 }
 
 static struct ivi_output *
+ivi_layout_find_app_id(const char *app_id, struct ivi_compositor *ivi)
+{
+	struct ivi_output *out;
+
+	wl_list_for_each(out, &ivi->outputs, link) {
+		if (!out->app_id)
+			continue;
+
+		if (!strcmp(app_id, out->app_id))
+			return out;
+	}
+
+	return NULL;
+}
+
+
+static struct ivi_output *
 ivi_layout_find_bg_output(struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;
@@ -276,6 +293,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 	struct weston_geometry geom = weston_desktop_surface_get_geometry(dsurf);
 	struct ivi_policy *policy = surf->ivi->policy;
 	struct ivi_output *output;
+	const char *app_id = weston_desktop_surface_get_app_id(dsurf);
 
 	assert(surf->role == IVI_SURFACE_ROLE_DESKTOP ||
 	       surf->role == IVI_SURFACE_ROLE_REMOTE);
@@ -293,7 +311,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		output = surf->remote.output;
 
 	if (surf->role == IVI_SURFACE_ROLE_DESKTOP && !output) {
-		struct ivi_output *ivi_bg_output;
+		struct ivi_output *r_output;
 
 		if (policy && policy->api.surface_activate_by_default &&
 		    !policy->api.surface_activate_by_default(surf, surf->ivi))
@@ -303,18 +321,21 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		if (surf->activated_by_default)
 			return;
 
-		ivi_bg_output = ivi_layout_find_bg_output(surf->ivi);
+		/* check first if there aren't any outputs being set */
+		r_output = ivi_layout_find_app_id(app_id, surf->ivi);
+
+		/* try finding an output with a background and use that */
+		if (!r_output)
+			r_output = ivi_layout_find_bg_output(surf->ivi);
 
 		/* use the output of the bg to activate the app on start-up by
 		 * default */
-		if (surf->view && ivi_bg_output) {
-			const char *app_id =
-				weston_desktop_surface_get_app_id(dsurf);
-			if (app_id && ivi_bg_output) {
+		if (surf->view && r_output) {
+			if (app_id && r_output) {
 				weston_log("Surface with app_id %s, role %s activating by default\n",
 					weston_desktop_surface_get_app_id(surf->dsurface),
 					ivi_layout_get_surface_role_name(surf));
-				ivi_layout_activate(ivi_bg_output, app_id);
+				ivi_layout_activate(r_output, app_id);
 				surf->activated_by_default = true;
 			}
 		}
@@ -323,7 +344,6 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 	}
 
 	if (surf->role == IVI_SURFACE_ROLE_REMOTE && output) {
-		const char *app_id;
 		if (policy && policy->api.surface_activate_by_default &&
 		    !policy->api.surface_activate_by_default(surf, surf->ivi))
 			return;
@@ -336,7 +356,6 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		if (surf->activated_by_default && output->active == surf)
 			return;
 
-		app_id = weston_desktop_surface_get_app_id(dsurf);
 		if (app_id) {
 			weston_log("Surface with app_id %s, role %s activating by default\n",
 					weston_desktop_surface_get_app_id(surf->dsurface),

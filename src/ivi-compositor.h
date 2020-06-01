@@ -136,6 +136,8 @@ struct ivi_output {
 	/* Temporary: only used during configuration */
 	size_t add_len;
 	struct weston_head *add[8];
+
+	char *app_id;
 };
 
 enum ivi_surface_role {
