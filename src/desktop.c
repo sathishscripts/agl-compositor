@@ -221,9 +221,6 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 	case IVI_SURFACE_ROLE_REMOTE:
 		ivi_layout_desktop_committed(surface);
 		break;
-	case IVI_SURFACE_ROLE_PANEL:
-		ivi_layout_panel_committed(surface);
-		break;
 	case IVI_SURFACE_ROLE_POPUP:
 		ivi_layout_popup_committed(surface);
 		break;
@@ -236,6 +233,7 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		break;
 	case IVI_SURFACE_ROLE_NONE:
 	case IVI_SURFACE_ROLE_BACKGROUND:
+	case IVI_SURFACE_ROLE_PANEL:
 	default: /* fall through */
 		break;
 	}
