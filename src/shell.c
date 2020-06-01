@@ -606,7 +606,8 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	ivi->shell_client.ready = true;
 
 	wl_list_for_each(output, &ivi->outputs, link) {
-		remove_black_surface(output);
+		if (output->background)
+			remove_black_surface(output);
 		ivi_layout_init(ivi, output);
 	}
 
