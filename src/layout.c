@@ -324,6 +324,13 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		/* check first if there aren't any outputs being set */
 		r_output = ivi_layout_find_app_id(app_id, surf->ivi);
 
+		if (r_output) {
+			struct weston_view *view = r_output->fullscreen_view.fs->view;
+			if (view->is_mapped || view->surface->is_mapped)
+				remove_black_surface(r_output);
+		}
+
+
 		/* try finding an output with a background and use that */
 		if (!r_output)
 			r_output = ivi_layout_find_bg_output(surf->ivi);
