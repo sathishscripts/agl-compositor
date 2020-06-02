@@ -662,9 +662,9 @@ err:
 }
 
 static int
-load_remoting(struct weston_compositor *compositor, struct weston_config *config)
+load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 {
-	const struct weston_remoting_api *api = NULL;
+	struct weston_compositor *compositor = ivi->compositor;
 	int (*module_init)(struct weston_compositor *wc);
 	struct weston_config_section *remote_section = NULL;
 	const char *section_name;
@@ -677,14 +677,14 @@ load_remoting(struct weston_compositor *compositor, struct weston_config *config
 	if (module_init(compositor) < 0)
 		return -1;
 
-	api = weston_remoting_get_api(compositor);
-	if (!api)
+	ivi->remoting_api = weston_remoting_get_api(compositor);
+	if (!ivi->remoting_api)
 		return -1;
 
 	while (weston_config_next_section(config, &remote_section, &section_name)) {
 		if (strcmp(section_name, "remote-output"))
 			continue;
-		remote_output_init(compositor, remote_section, api);
+		remote_output_init(compositor, remote_section, ivi->remoting_api);
 	}
 
 	return 0;
@@ -744,7 +744,7 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 		goto error;
 	}
 
-	load_remoting(ivi->compositor, ivi->config);
+	load_remoting(ivi, ivi->config);
 
 error:
 	free(config.gbm_format);
