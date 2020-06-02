@@ -53,6 +53,10 @@
 
 #include "agl-shell-server-protocol.h"
 
+#ifdef HAVE_REMOTING
+#include "remote.h"
+#endif
+
 static int cached_tm_mday = -1;
 static struct weston_log_scope *log_scope;
 
@@ -548,6 +552,151 @@ heads_changed(struct wl_listener *listener, void *arg)
 	}
 }
 
+#ifdef HAVE_REMOTING
+static int
+drm_backend_remoted_output_configure(struct weston_output *output,
+				     struct weston_config_section *section,
+				     char *modeline,
+				     const struct weston_remoting_api *api)
+{
+	char *gbm_format = NULL;
+	char *seat = NULL;
+	char *host = NULL;
+	char *pipeline = NULL;
+	int port, ret;
+
+	ret = api->set_mode(output, modeline);
+	if (ret < 0) {
+		weston_log("Cannot configure an output \"%s\" using "
+				"weston_remoting_api. Invalid mode\n",
+				output->name);
+		return -1;
+	}
+
+	/* FIXME: retrieve the scale and the transform from config file */
+	weston_output_set_scale(output, 1);
+	weston_output_set_transform(output, WL_OUTPUT_TRANSFORM_NORMAL);
+
+	weston_config_section_get_string(section, "gbm-format",
+					 &gbm_format, NULL);
+	api->set_gbm_format(output, gbm_format);
+	free(gbm_format);
+
+	weston_config_section_get_string(section, "seat", &seat, "");
+
+	api->set_seat(output, seat);
+	free(seat);
+
+	weston_config_section_get_string(section, "gst-pipeline", &pipeline,
+			NULL);
+	if (pipeline) {
+		api->set_gst_pipeline(output, pipeline);
+		free(pipeline);
+		return 0;
+	}
+
+	weston_config_section_get_string(section, "host", &host, NULL);
+	weston_config_section_get_int(section, "port", &port, 0);
+	if (!host || port <= 0 || 65533 < port) {
+		weston_log("Cannot configure an output \"%s\". "
+				"Need to specify gst-pipeline or "
+				"host and port (1-65533).\n", output->name);
+	}
+	api->set_host(output, host);
+	free(host);
+	api->set_port(output, port);
+
+	return 0;
+}
+
+
+static void
+remote_output_init(struct weston_compositor *compositor,
+		   struct weston_config_section *section,
+		   const struct weston_remoting_api *api)
+{
+	struct weston_output *output = NULL;
+	char *output_name, *modeline = NULL;
+	int ret;
+
+	weston_config_section_get_string(section, "name", &output_name, NULL);
+	if (!output_name)
+		return;
+
+	weston_config_section_get_string(section, "mode", &modeline, "off");
+	if (strcmp(modeline, "off") == 0)
+		goto err;
+
+	output = api->create_output(compositor, output_name);
+	if (!output) {
+		weston_log("Cannot create remoted output \"%s\".\n",
+				output_name);
+		goto err;
+	}
+
+	ret = drm_backend_remoted_output_configure(output, section,
+						   modeline, api);
+	if (ret < 0) {
+		weston_log("Cannot configure remoted output \"%s\".\n",
+				output_name);
+		goto err;
+	}
+
+	if (weston_output_enable(output) < 0) {
+		weston_log("Enabling remoted output \"%s\" failed.\n",
+				output_name);
+		goto err;
+	}
+
+	free(modeline);
+	free(output_name);
+	weston_log("remoted output '%s' enabled\n", output->name);
+	return;
+
+err:
+	free(modeline);
+	free(output_name);
+	if (output)
+		weston_output_destroy(output);
+
+}
+
+static int
+load_remoting(struct weston_compositor *compositor, struct weston_config *config)
+{
+	const struct weston_remoting_api *api = NULL;
+	int (*module_init)(struct weston_compositor *wc);
+	struct weston_config_section *remote_section = NULL;
+	const char *section_name;
+
+	module_init = weston_load_module("remoting-plugin.so",
+					 "weston_module_init");
+	if (!module_init)
+		return -1;
+
+	if (module_init(compositor) < 0)
+		return -1;
+
+	api = weston_remoting_get_api(compositor);
+	if (!api)
+		return -1;
+
+	while (weston_config_next_section(config, &remote_section, &section_name)) {
+		if (strcmp(section_name, "remote-output"))
+			continue;
+		remote_output_init(compositor, remote_section, api);
+	}
+
+	return 0;
+}
+#else
+static int
+load_remoting(struct weston_compositor *compositor, struct weston_config *config)
+{
+	return -1;
+}
+#endif
+
 static int
 load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 {
@@ -594,6 +743,8 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 		ret = -1;
 		goto error;
 	}
+
+	load_remoting(ivi->compositor, ivi->config);
 
 error:
 	free(config.gbm_format);

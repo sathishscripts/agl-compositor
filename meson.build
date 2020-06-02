@@ -46,6 +46,22 @@ prog_scanner = find_program(dep_scanner.get_pkgconfig_variable('wayland_scanner'
 dep_wp = dependency('wayland-protocols', version: '>= 1.18')
 dir_wp_base = dep_wp.get_pkgconfig_variable('pkgdatadir')
 
+depnames = [
+  'gstreamer-1.0', 'gstreamer-allocators-1.0',
+  'gstreamer-app-1.0', 'gstreamer-video-1.0',
+  'gobject-2.0', 'glib-2.0'
+]
+
+deps_remoting = []
+foreach depname : depnames
+  dep = dependency(depname, required: false)
+  if not dep.found()
+    message('Remoting requires @0@ which was not found. '.format(depname))
+  endif
+deps_remoting += dep
+endforeach
+
+
 agl_shell_xml = files('protocol/agl-shell.xml')
 agl_shell_desktop_xml = files('protocol/agl-shell-desktop.xml')
 xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
@@ -157,6 +173,11 @@ if dep_libsystemd.found()
   deps_libweston += dep_libsystemd
 
   message('Found systemd, enabling notify support')
+endif
+
+if deps_remoting.length() == depnames.length()
+  config_h.set('HAVE_REMOTING', 1)
+  message('Found remoting depends, enabling remoting')
 endif
 
 configure_file(output: 'config.h', configuration: config_h)
