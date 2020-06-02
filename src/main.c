@@ -610,31 +610,31 @@ drm_backend_remoted_output_configure(struct weston_output *output,
 }
 
 
-static void
-remote_output_init(struct weston_compositor *compositor,
+static int
+remote_output_init(struct ivi_output *ivi_output,
+		   struct weston_compositor *compositor,
 		   struct weston_config_section *section,
 		   const struct weston_remoting_api *api)
 {
-	struct weston_output *output = NULL;
 	char *output_name, *modeline = NULL;
-	int ret;
+	int ret = -1;
 
 	weston_config_section_get_string(section, "name", &output_name, NULL);
 	if (!output_name)
-		return;
+		return ret;
 
 	weston_config_section_get_string(section, "mode", &modeline, "off");
 	if (strcmp(modeline, "off") == 0)
 		goto err;
 
-	output = api->create_output(compositor, output_name);
-	if (!output) {
+	ivi_output->output = api->create_output(compositor, output_name);
+	if (!ivi_output->output) {
 		weston_log("Cannot create remoted output \"%s\".\n",
 				output_name);
 		goto err;
 	}
 
-	ret = drm_backend_remoted_output_configure(output, section,
+	ret = drm_backend_remoted_output_configure(ivi_output->output, section,
 						   modeline, api);
 	if (ret < 0) {
 		weston_log("Cannot configure remoted output \"%s\".\n",
@@ -642,7 +642,7 @@ remote_output_init(struct weston_compositor *compositor,
 		goto err;
 	}
 
-	if (weston_output_enable(output) < 0) {
+	if (weston_output_enable(ivi_output->output) < 0) {
 		weston_log("Enabling remoted output \"%s\" failed.\n",
 				output_name);
 		goto err;
@@ -650,15 +650,17 @@ remote_output_init(struct weston_compositor *compositor,
 
 	free(modeline);
 	free(output_name);
-	weston_log("remoted output '%s' enabled\n", output->name);
-	return;
+	weston_log("remoted output '%s' enabled\n", ivi_output->output->name);
+
+	return 0;
 
 err:
 	free(modeline);
 	free(output_name);
-	if (output)
-		weston_output_destroy(output);
+	if (ivi_output->output)
+		weston_output_destroy(ivi_output->output);
 
+	return ret;
 }
 
 static int
@@ -684,7 +686,42 @@ load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 	while (weston_config_next_section(config, &remote_section, &section_name)) {
 		if (strcmp(section_name, "remote-output"))
 			continue;
-		remote_output_init(compositor, remote_section, ivi->remoting_api);
+
+		struct ivi_output *ivi_output = NULL;
+		bool output_found = false;
+		char *_name = NULL;
+
+		weston_config_section_get_string(remote_section, "name", &_name, NULL);
+		wl_list_for_each(ivi_output, &ivi->outputs, link) {
+			if (!strcmp(ivi_output->name, _name)) {
+				output_found = true;
+				break;
+			}
+		}
+
+		if (output_found) {
+			free(_name);
+			continue;
+		}
+
+		ivi_output = zalloc(sizeof(*ivi_output));
+
+		ivi_output->ivi = ivi;
+		ivi_output->name = _name;
+		ivi_output->config = remote_section;
+
+		if (remote_output_init(ivi_output, compositor,
+				       remote_section, ivi->remoting_api)) {
+			free(ivi_output->name);
+			free(ivi_output);
+			continue;
+		}
+
+		ivi_output->output_destroy.notify = handle_output_destroy;
+		weston_output_add_destroy_listener(ivi_output->output,
+						   &ivi_output->output_destroy);
+
+		wl_list_insert(&ivi->outputs, &ivi_output->link);
 	}
 
 	return 0;
