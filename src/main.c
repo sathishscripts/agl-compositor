@@ -731,6 +731,7 @@ load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 						   &ivi_output->output_destroy);
 
 		wl_list_insert(&ivi->outputs, &ivi_output->link);
+		ivi_output_configure_app_id(ivi_output);
 	}
 
 	return 0;
