@@ -564,6 +564,9 @@ drm_backend_remoted_output_configure(struct weston_output *output,
 	char *host = NULL;
 	char *pipeline = NULL;
 	int port, ret;
+	int32_t scale = 1;
+	uint32_t transform = WL_OUTPUT_TRANSFORM_NORMAL;
+	char *trans;
 
 	ret = api->set_mode(output, modeline);
 	if (ret < 0) {
@@ -573,9 +576,15 @@ drm_backend_remoted_output_configure(struct weston_output *output,
 		return -1;
 	}
 
-	/* FIXME: retrieve the scale and the transform from config file */
-	weston_output_set_scale(output, 1);
-	weston_output_set_transform(output, WL_OUTPUT_TRANSFORM_NORMAL);
+	weston_config_section_get_int(section, "scale", &scale, 1);
+	weston_output_set_scale(output, scale);
+
+	weston_config_section_get_string(section, "transform", &trans, "normal");
+	if (parse_transform(trans, &transform) < 0) {
+		weston_log("Invalid transform \"%s\" for output %s\n",
+			   trans, output->name);
+	}
+	weston_output_set_transform(output, transform);
 
 	weston_config_section_get_string(section, "gbm-format",
 					 &gbm_format, NULL);
