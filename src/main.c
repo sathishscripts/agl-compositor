@@ -101,6 +101,9 @@ ivi_output_configure_app_id(struct ivi_output *ivi_output)
 						 "agl-shell-app-id",
 						 &ivi_output->app_id,
 						 NULL);
+
+		weston_log("Will place app_id %s on output %s\n",
+				ivi_output->app_id, ivi_output->name);
 	}
 }
 
