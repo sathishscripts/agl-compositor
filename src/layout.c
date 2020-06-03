@@ -77,10 +77,8 @@ ivi_background_init(struct ivi_compositor *ivi, struct ivi_output *output)
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, woutput->x, woutput->y);
 
-#ifdef AGL_COMP_DEBUG
-	weston_log("(background) position view %p, x %d, y %d\n", view,
-			woutput->x, woutput->y);
-#endif
+	weston_log("(background) position view %p, x %d, y %d, on output %s\n", view,
+			woutput->x, woutput->y, output->name);
 
 	view->is_mapped = true;
 	view->surface->is_mapped = true;
@@ -106,10 +104,10 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 	dsurface = panel->dsurface;
 	view = panel->view;
 	geom = weston_desktop_surface_get_geometry(dsurface);
-#ifdef AGL_COMP_DEBUG
+
 	weston_log("(panel) geom.width %d, geom.height %d, geom.x %d, geom.y %d\n",
 			geom.width, geom.height, geom.x, geom.y);
-#endif
+
 	switch (panel->panel.edge) {
 	case AGL_SHELL_EDGE_TOP:
 		output->area.y += geom.height;
@@ -134,33 +132,16 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, x, y);
-#ifdef AGL_COMP_DEBUG
+
 	weston_log("(panel) edge %d position view %p, x %d, y %d\n",
 			panel->panel.edge, view, x, y);
-#endif
-
-	/* this is necessary for cases we already mapped it desktop_committed()
-	 * but we not running the older qtwayland, so we still have a chance
-	 * for this to run at the next test */
-	if (view->surface->is_mapped) {
-		weston_layer_entry_remove(&view->layer_link);
-
-		view->is_mapped = false;
-		view->surface->is_mapped = false;
-	}
-
-	/* give ivi_layout_panel_committed() a chance to map the view/surface
-	 * instead */
-	if ((geom.width == geom.height && geom.width == 0) &&
-	    (geom.x == geom.y && geom.x == 0) &&
-	    panel->panel.edge != AGL_SHELL_EDGE_TOP)
-		return;
 
 	view->is_mapped = true;
 	view->surface->is_mapped = true;
-#ifdef AGL_COMP_DEBUG
-	weston_log("panel type %d inited\n", panel->panel.edge);
-#endif
+
+	weston_log("panel type %d inited on output %s\n", panel->panel.edge,
+			output->name);
+
 	weston_layer_entry_insert(&ivi->panel.view_list, &view->layer_link);
 }
 
@@ -250,9 +231,9 @@ ivi_layout_activate_complete(struct ivi_output *output,
 		surf->desktop.pending_output = NULL;
 	}
 
-	weston_log("Activated completed for app_id %s, role %s\n",
+	weston_log("Activated completed for app_id %s, role %s on output %s\n",
 			weston_desktop_surface_get_app_id(surf->dsurface),
-			ivi_layout_get_surface_role_name(surf));
+			ivi_layout_get_surface_role_name(surf), output->name);
 }
 
 static struct ivi_output *
