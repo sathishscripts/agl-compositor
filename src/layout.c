@@ -236,7 +236,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 			ivi_layout_get_surface_role_name(surf), output->name);
 }
 
-static struct ivi_output *
+struct ivi_output *
 ivi_layout_find_app_id(const char *app_id, struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;

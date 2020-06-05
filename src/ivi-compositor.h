@@ -358,4 +358,11 @@ remove_black_surface(struct ivi_output *output);
 const char *
 ivi_layout_get_surface_role_name(struct ivi_surface *surf);
 
+void
+ivi_set_pending_desktop_surface_remote(struct ivi_output *ioutput,
+		const char *app_id);
+
+struct ivi_output *
+ivi_layout_find_app_id(const char *app_id, struct ivi_compositor *ivi);
+
 #endif

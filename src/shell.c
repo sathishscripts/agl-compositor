@@ -186,7 +186,7 @@ ivi_set_pending_desktop_surface_split(struct ivi_output *ioutput,
 	wl_list_insert(&ivi->split_pending_apps, &split->link);
 }
 
-static void
+void
 ivi_set_pending_desktop_surface_remote(struct ivi_output *ioutput,
 		const char *app_id)
 {
