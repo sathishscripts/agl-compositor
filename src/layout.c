@@ -614,6 +614,16 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	    ivi_layout_surface_is_split_or_fullscreen(surf))
 		return;
 
+	if (surf->role == IVI_SURFACE_ROLE_REMOTE) {
+		struct ivi_output *remote_output =
+			ivi_layout_find_with_app_id(app_id, ivi);
+
+		/* if already active on a remote output do not
+		 * attempt to activate it again */
+		if (remote_output && remote_output->active == surf)
+			return;
+	}
+
 
 	dsurf = surf->dsurface;
 	view = surf->view;
