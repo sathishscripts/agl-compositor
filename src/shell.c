@@ -559,8 +559,16 @@ create_black_surface_view(struct ivi_output *output)
 void
 remove_black_surface(struct ivi_output *output)
 {
-	struct weston_view *view = output->fullscreen_view.fs->view;
+	struct weston_view *view;
 
+	if (!output &&
+	    !output->fullscreen_view.fs &&
+	    !output->fullscreen_view.fs->view) {
+		weston_log("Output %s doesn't have a surface installed!\n", output->name);
+		return;
+	}
+
+	view = output->fullscreen_view.fs->view;
 	assert(view->is_mapped == true ||
 	       view->surface->is_mapped == true);
 
@@ -576,8 +584,16 @@ remove_black_surface(struct ivi_output *output)
 void
 insert_black_surface(struct ivi_output *output)
 {
-	struct weston_view *view = output->fullscreen_view.fs->view;
+	struct weston_view *view;
 
+	if (!output &&
+	    !output->fullscreen_view.fs &&
+	    !output->fullscreen_view.fs->view) {
+		weston_log("Output %s doesn't have a surface installed!\n", output->name);
+		return;
+	}
+
+	view = output->fullscreen_view.fs->view;
 	if (view->is_mapped || view->surface->is_mapped)
 		return;
 
