@@ -675,25 +675,12 @@ err:
 	return ret;
 }
 
-static int
-load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
+static void
+ivi_enable_remote_outputs(struct ivi_compositor *ivi)
 {
-	struct weston_compositor *compositor = ivi->compositor;
-	int (*module_init)(struct weston_compositor *wc);
 	struct weston_config_section *remote_section = NULL;
 	const char *section_name;
-
-	module_init = weston_load_module("remoting-plugin.so",
-					 "weston_module_init");
-	if (!module_init)
-		return -1;
-
-	if (module_init(compositor) < 0)
-		return -1;
-
-	ivi->remoting_api = weston_remoting_get_api(compositor);
-	if (!ivi->remoting_api)
-		return -1;
+	struct weston_config *config = ivi->config;
 
 	while (weston_config_next_section(config, &remote_section, &section_name)) {
 		if (strcmp(section_name, "remote-output"))
@@ -703,7 +690,8 @@ load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 		bool output_found = false;
 		char *_name = NULL;
 
-		weston_config_section_get_string(remote_section, "name", &_name, NULL);
+		weston_config_section_get_string(remote_section,
+						 "name", &_name, NULL);
 		wl_list_for_each(ivi_output, &ivi->outputs, link) {
 			if (!strcmp(ivi_output->name, _name)) {
 				output_found = true;
@@ -722,7 +710,7 @@ load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 		ivi_output->name = _name;
 		ivi_output->config = remote_section;
 
-		if (remote_output_init(ivi_output, compositor,
+		if (remote_output_init(ivi_output, ivi->compositor,
 				       remote_section, ivi->remoting_api)) {
 			free(ivi_output->name);
 			free(ivi_output);
@@ -736,12 +724,30 @@ load_remoting(struct ivi_compositor *ivi, struct weston_config *config)
 		wl_list_insert(&ivi->outputs, &ivi_output->link);
 		ivi_output_configure_app_id(ivi_output);
 	}
+}
 
+static int
+load_remoting_plugin(struct ivi_compositor *ivi, struct weston_config *config)
+{
+	struct weston_compositor *compositor = ivi->compositor;
+	int (*module_init)(struct weston_compositor *wc);
+
+	module_init = weston_load_module("remoting-plugin.so",
+					 "weston_module_init");
+	if (!module_init)
+		return -1;
+
+	if (module_init(compositor) < 0)
+		return -1;
+
+	ivi->remoting_api = weston_remoting_get_api(compositor);
+	if (!ivi->remoting_api)
+		return -1;
 	return 0;
 }
 #else
 static int
-load_remoting(struct weston_compositor *compositor, struct weston_config *config)
+load_remoting_plugin(struct weston_compositor *compositor, struct weston_config *config)
 {
 	return -1;
 }
@@ -794,7 +800,7 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 		goto error;
 	}
 
-	load_remoting(ivi, ivi->config);
+	load_remoting_plugin(ivi, ivi->config);
 
 error:
 	free(config.gbm_format);
@@ -1471,6 +1477,9 @@ int main(int argc, char *argv[])
 	weston_compositor_flush_heads_changed(ivi.compositor);
 
 	ivi_shell_init_black_fs(&ivi);
+
+	if (ivi.remoting_api)
+		ivi_enable_remote_outputs(&ivi);
 
 	if (create_listening_socket(display, socket_name) < 0)
 		goto error_compositor;
