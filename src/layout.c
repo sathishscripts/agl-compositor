@@ -236,8 +236,8 @@ ivi_layout_activate_complete(struct ivi_output *output,
 			ivi_layout_get_surface_role_name(surf), output->name);
 }
 
-static struct ivi_output *
-ivi_layout_find_app_id(const char *app_id, struct ivi_compositor *ivi)
+struct ivi_output *
+ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;
 
@@ -303,7 +303,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			return;
 
 		/* check first if there aren't any outputs being set */
-		r_output = ivi_layout_find_app_id(app_id, surf->ivi);
+		r_output = ivi_layout_find_with_app_id(app_id, surf->ivi);
 
 		if (r_output) {
 			struct weston_view *view = r_output->fullscreen_view.fs->view;

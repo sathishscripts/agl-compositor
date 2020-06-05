@@ -61,6 +61,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_desktop_client *dclient;
 	struct wl_client *client;
 	struct ivi_surface *surface;
+	struct ivi_output *active_output = NULL;
 	const char *app_id = NULL;
 
 	dclient = weston_desktop_surface_get_client(dsurface);
@@ -94,6 +95,9 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
 	app_id = weston_desktop_surface_get_app_id(dsurface);
+
+	if ((active_output = ivi_layout_find_with_app_id(app_id, ivi)))
+		ivi_set_pending_desktop_surface_remote(active_output, app_id);
 
 	if (ivi->shell_client.ready) {
 		ivi_check_pending_desktop_surface(surface);
