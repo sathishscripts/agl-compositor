@@ -45,15 +45,11 @@
 static void
 create_black_surface_view(struct ivi_output *output);
 
-void
-ivi_set_desktop_surface(struct ivi_surface *surface)
+static void
+agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
+					   struct ivi_surface *surface)
 {
 	struct desktop_client *dclient;
-	struct ivi_compositor *ivi = surface->ivi;
-	assert(surface->role == IVI_SURFACE_ROLE_NONE);
-
-	surface->role = IVI_SURFACE_ROLE_DESKTOP;
-	wl_list_insert(&surface->ivi->surfaces, &surface->link);
 
 	/* advertise to all desktop clients the new surface */
 	wl_list_for_each(dclient, &ivi->desktop_clients, link) {
@@ -61,6 +57,18 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 			weston_desktop_surface_get_app_id(surface->dsurface);
 		agl_shell_desktop_send_application(dclient->resource, app_id);
 	}
+}
+
+void
+ivi_set_desktop_surface(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_NONE);
+
+	surface->role = IVI_SURFACE_ROLE_DESKTOP;
+	wl_list_insert(&surface->ivi->surfaces, &surface->link);
+
+	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
 static void
@@ -71,6 +79,8 @@ ivi_set_desktop_surface_popup(struct ivi_surface *surface)
 
 	surface->role = IVI_SURFACE_ROLE_POPUP;
 	wl_list_insert(&ivi->surfaces, &surface->link);
+
+	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
 static void
@@ -81,6 +91,8 @@ ivi_set_desktop_surface_fullscreen(struct ivi_surface *surface)
 
 	surface->role = IVI_SURFACE_ROLE_FULLSCREEN;
 	wl_list_insert(&ivi->surfaces, &surface->link);
+
+	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
 static void
@@ -119,6 +131,8 @@ ivi_set_desktop_surface_split(struct ivi_surface *surface)
 		surface->role = IVI_SURFACE_ROLE_SPLIT_H;
 
 	wl_list_insert(&ivi->surfaces, &surface->link);
+
+	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
 static void
