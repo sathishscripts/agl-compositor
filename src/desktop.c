@@ -23,6 +23,7 @@
  * SOFTWARE.
  */
 
+#include <assert.h>
 #include "ivi-compositor.h"
 #include "policy.h"
 
