@@ -949,6 +949,17 @@ bind_agl_shell(struct wl_client *client,
 {
 	struct ivi_compositor *ivi = data;
 	struct wl_resource *resource;
+	struct ivi_policy *policy;
+	void *interface;
+
+	policy = ivi->policy;
+	interface = (void *) &agl_shell_interface;
+	if (policy && policy->api.shell_bind_interface &&
+	    !policy->api.shell_bind_interface(client, interface)) {
+		wl_client_post_implementation_error(client,
+				       "client not authorized to use agl_shell");
+		return;
+	}
 
 	resource = wl_resource_create(client, &agl_shell_interface,
 				      1, id);
@@ -991,8 +1002,20 @@ bind_agl_shell_desktop(struct wl_client *client,
 {
 	struct ivi_compositor *ivi = data;
 	struct wl_resource *resource;
-	struct desktop_client *dclient = zalloc(sizeof(*dclient));
+	struct ivi_policy *policy;
+	struct desktop_client *dclient;
+	void *interface;
 
+	policy = ivi->policy;
+	interface  = (void *) &agl_shell_desktop_interface;
+	if (policy && policy->api.shell_bind_interface &&
+	    !policy->api.shell_bind_interface(client, interface)) {
+		wl_client_post_implementation_error(client,
+				"client not authorized to use agl_shell_desktop");
+		return;
+	}
+
+	dclient = zalloc(sizeof(*dclient));
 	if (!dclient) {
 		wl_client_post_no_memory(client);
 		return;

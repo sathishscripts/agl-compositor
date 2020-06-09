@@ -79,6 +79,12 @@ ivi_policy_default_surface_advertise_state_change(struct ivi_surface *surf, void
 }
 
 static bool
+ivi_policy_default_shell_bind_interface(void *client, void *interface)
+{
+	return true;
+}
+
+static bool
 ivi_policy_default_allow_to_add(void *user_data)
 {
 	/* verify that policy rules can be added with ivi_policy_add() */
@@ -113,6 +119,7 @@ static const struct ivi_policy_api policy_api = {
 	.surface_deactivate = ivi_policy_default_surface_deactivate,
 	.surface_activate_by_default = ivi_policy_default_surface_activate_default,
 	.surface_advertise_state_change = ivi_policy_default_surface_advertise_state_change,
+	.shell_bind_interface = ivi_policy_default_shell_bind_interface,
 	.policy_rule_allow_to_add = ivi_policy_default_allow_to_add,
 	.policy_rule_try_event = ivi_policy_default_try_event,
 };
