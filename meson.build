@@ -139,7 +139,6 @@ srcs_agl_compositor = [
 	'src/desktop.c',
 	'src/layout.c',
 	'src/policy.c',
-	'src/policy-default.c',
 	'src/shell.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
@@ -149,6 +148,16 @@ srcs_agl_compositor = [
 	agl_shell_desktop_protocol_c,
 	xdg_shell_protocol_c,
 ]
+
+policy_to_install = get_option('policy-default')
+if policy_to_install == 'auto' or policy_to_install == 'allow-all'
+  srcs_agl_compositor += 'src/policy-default.c'
+  message('Installing allow all policy')
+elif policy_to_install == 'deny-all'
+  srcs_agl_compositor += 'src/policy-deny.c'
+  message('Installing deny all policy')
+endif
+
 
 # From meson documentation:
 # In order to look for headers in a specific directory you can use args :
