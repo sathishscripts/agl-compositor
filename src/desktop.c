@@ -85,14 +85,14 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->role = IVI_SURFACE_ROLE_NONE;
 	surface->activated_by_default = false;
 
+	weston_desktop_surface_set_user_data(dsurface, surface);
+
 	if (ivi->policy && ivi->policy->api.surface_create &&
 	    !ivi->policy->api.surface_create(surface, ivi)) {
-		free(surface);
 		wl_client_post_no_memory(client);
 		return;
 	}
 
-	weston_desktop_surface_set_user_data(dsurface, surface);
 
 	app_id = weston_desktop_surface_get_app_id(dsurface);
 
@@ -209,7 +209,11 @@ skip_output_asignment:
 	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
 			weston_desktop_surface_get_app_id(dsurface),
 			ivi_layout_get_surface_role_name(surface));
-	wl_list_remove(&surface->link);
+
+	/* we weren't added to any list if we are still with 'none' as role */
+	if (surface->role != IVI_SURFACE_ROLE_NONE)
+		wl_list_remove(&surface->link);
+
 	free(surface);
 }
 
