@@ -517,22 +517,22 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct weston_output *woutput = output->output;
 
 	struct weston_view *view = surface->view;
-	struct weston_geometry geom;
 
 	if (surface->view->is_mapped)
 		return;
 
-	geom = weston_desktop_surface_get_geometry(dsurface);
-	weston_log("(popup) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
-			geom.width, geom.height);
-
 	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
 
 	weston_view_set_output(view, woutput);
-	if (surface->popup.x || surface->popup.y)
-		weston_view_set_position(view, surface->popup.x, surface->popup.y);
-	else
-		weston_view_set_position(view, geom.x, geom.y);
+	weston_view_set_position(view, surface->popup.x, surface->popup.y);
+
+	/* only clip the pop-up dialog window if we have a valid
+	 * width and height being passed on. Users might not want to have one
+	 * set-up so only enfore it is really passed on. */
+	if (surface->popup.bb.width > 0 && surface->popup.bb.height > 0)
+		weston_view_set_mask(view, surface->popup.bb.x, surface->popup.bb.y,
+				     surface->popup.bb.width, surface->popup.bb.height);
+
 	weston_layer_entry_insert(&ivi->popup.view_list, &view->layer_link);
 
 	weston_view_update_transform(view);
