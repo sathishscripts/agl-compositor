@@ -165,7 +165,14 @@ needed to activate applications.
 ## Policy
 
 The compositor contains an API useful for defining policy rules.  It contains
-the bare minimum and installs, by default, an allow-all kind of engine.
+the bare minimum and installs, by default, an allow-all kind of engine. A
+deny-all policy engine exists and can be switched to by using
+`-Dpolicy-default=deny-all` build time option.
+
+For instance, in order to configure the compositor with that policy one could
+issue:
+
+	$ meson -Dprefix=/path/to/where/to/install/compositor -Dpolicy-default=deny-all build_directory
 
 Users wanting  to create their own policy engine should create a specialized
 version and use `struct ivi_policy_api` where they can install their own
@@ -186,9 +193,10 @@ control if policy rules (the next type) can be added or not. Finally, we have
 `ivi_policy_api::policy_rule_try_event()` which is executed for each policy
 rules currently added, by using the policy API `ivi_policy_add()`.
 
-Users can customize the hooks by using some sort of database to retrieve
-the application name to compare against, or incorporate some kind of policy
-rule engine.
+Users can customize the hooks by using some sort of database to retrieve the
+application name to compare against, or incorporate some kind of policy rule
+engine.  Alternatively, one can use the deny-all policy engine which allows the
+top panel applications to be used/displayed as permitted applications.
 
 ### Policy rules
 

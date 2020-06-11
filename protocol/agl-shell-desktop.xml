@@ -28,8 +28,8 @@
       to activate or switch to other running (regular) applications. The client
       is responsbile for filtering their own app_id when receiving application id.
 
-      Note that other (regular) applications can bind to this interface and there is
-      no mechanism to place to restrict or limit that.
+      The compositor will allow clients to bind to this interface only if the
+      policy engine allows it.
     </description>
 
     <enum name="app_role">
