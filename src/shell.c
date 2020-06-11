@@ -137,7 +137,8 @@ ivi_set_desktop_surface_split(struct ivi_surface *surface)
 
 static void
 ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
-				      int x, int y, const char *app_id)
+				      int x, int y, int bx, int by, int width, int height,
+				      const char *app_id)
 {
 	struct ivi_compositor *ivi = ioutput->ivi;
 	size_t len_app_id = strlen(app_id);
@@ -149,6 +150,11 @@ ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
 	p_popup->ioutput = ioutput;
 	p_popup->x = x;
 	p_popup->y = y;
+
+	p_popup->bb.x = bx;
+	p_popup->bb.y = by;
+	p_popup->bb.width = width;
+	p_popup->bb.height = height;
 
 	wl_list_insert(&ivi->popup_pending_apps, &p_popup->link);
 }
@@ -267,6 +273,12 @@ ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 			surface->popup.output = p_popup->ioutput;
 			surface->popup.x = p_popup->x;
 			surface->popup.y = p_popup->y;
+
+			surface->popup.bb.x = p_popup->bb.x;
+			surface->popup.bb.y = p_popup->bb.y;
+			surface->popup.bb.width = p_popup->bb.width;
+			surface->popup.bb.height = p_popup->bb.height;
+
 			ivi_remove_pending_desktop_surface_popup(p_popup);
 			return true;
 		}
@@ -858,7 +870,9 @@ static void
 shell_desktop_set_app_property(struct wl_client *client,
 			       struct wl_resource *shell_res,
 			       const char *app_id, uint32_t role,
-			       int x, int y, struct wl_resource *output_res)
+			       int x, int y, int bx, int by,
+			       int width, int height,
+			       struct wl_resource *output_res)
 {
 	struct weston_head *head = weston_head_from_resource(output_res);
 	struct weston_output *woutput = weston_head_get_output(head);
@@ -866,7 +880,8 @@ shell_desktop_set_app_property(struct wl_client *client,
 
 	switch (role) {
 	case AGL_SHELL_DESKTOP_APP_ROLE_POPUP:
-		ivi_set_pending_desktop_surface_popup(output, x, y, app_id);
+		ivi_set_pending_desktop_surface_popup(output, x, y, bx, by,
+						      width, height, app_id);
 		break;
 	case AGL_SHELL_DESKTOP_APP_ROLE_FULLSCREEN:
 		ivi_set_pending_desktop_surface_fullscreen(output, app_id);

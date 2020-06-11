@@ -155,10 +155,16 @@ enum ivi_surface_role {
 	IVI_SURFACE_ROLE_REMOTE,
 };
 
+struct ivi_bounding_box {
+	int x; int y;
+	int width; int height;
+};
+
 struct pending_popup {
 	struct ivi_output *ioutput;
 	char *app_id;
 	int x; int y;
+	struct ivi_bounding_box bb;
 
 	struct wl_list link;	/** ivi_compositor::popup_pending_surfaces */
 };
@@ -193,8 +199,8 @@ struct ivi_background_surface {
 
 struct ivi_popup_surface {
 	struct ivi_output *output;
-	int x;
-	int y;
+	int x; int y; /* initial position */
+	struct ivi_bounding_box bb;	/* bounding box */
 };
 
 struct ivi_fullscreen_surface {
