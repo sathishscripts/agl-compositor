@@ -9,6 +9,8 @@ implementation of the XDG shell protocol which underlying toolkits
 The former is used to provide back-ends and rendering support, besides
 implementing the wayland protocol.
 
+![high overview diagram of the compositor](arch_diagram.png "high overview diagram of the compositor")
+
 xdg-shell is currently de facto protocol for handling all window management
 related functionality. In order to avoid polluting the wayland protocol
 namespace, the XDG extension, together with some other useful protocols, like
