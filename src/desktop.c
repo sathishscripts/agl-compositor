@@ -137,6 +137,12 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_desktop_surface_get_surface(dsurface);
 
 	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
+
+	/* special corner-case, pending_surfaces which are never activated or
+	 * being assigned an output might land here so just remove the surface */
+	if (output == NULL && surface->role == IVI_SURFACE_ROLE_NONE)
+		goto skip_output_asignment;
+
 	assert(output != NULL);
 
 	/* resize the active surface to the original size */
@@ -199,6 +205,7 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		output->background = NULL;
 	}
 
+skip_output_asignment:
 	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
 			weston_desktop_surface_get_app_id(dsurface),
 			ivi_layout_get_surface_role_name(surface));
