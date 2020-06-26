@@ -264,7 +264,7 @@ ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 	const char *_app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
 
-	if (wl_list_empty(&ivi->popup_pending_apps))
+	if (wl_list_empty(&ivi->popup_pending_apps) || !_app_id)
 		return false;
 
 	wl_list_for_each_safe(p_popup, next_p_popup,
@@ -295,7 +295,7 @@ ivi_check_pending_desktop_surface_split(struct ivi_surface *surface)
 	const char *_app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
 
-	if (wl_list_empty(&ivi->split_pending_apps))
+	if (wl_list_empty(&ivi->split_pending_apps) || !_app_id)
 		return false;
 
 	wl_list_for_each_safe(split_surf, next_split_surf,
@@ -319,7 +319,7 @@ ivi_check_pending_desktop_surface_fullscreen(struct ivi_surface *surface)
 	const char *_app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
 
-	if (wl_list_empty(&ivi->fullscreen_pending_apps))
+	if (wl_list_empty(&ivi->fullscreen_pending_apps) || !_app_id)
 		return false;
 
 	wl_list_for_each_safe(fs_surf, next_fs_surf,
@@ -342,7 +342,7 @@ ivi_check_pending_desktop_surface_remote(struct ivi_surface *surface)
 	const char *_app_id =
 		weston_desktop_surface_get_app_id(surface->dsurface);
 
-	if (wl_list_empty(&ivi->remote_pending_apps))
+	if (wl_list_empty(&ivi->remote_pending_apps) || !_app_id)
 		return false;
 
 	wl_list_for_each_safe(remote_surf, next_remote_surf,
