@@ -139,8 +139,13 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
 
 	/* special corner-case, pending_surfaces which are never activated or
-	 * being assigned an output might land here so just remove the surface */
-	if (output == NULL && surface->role == IVI_SURFACE_ROLE_NONE)
+	 * being assigned an output might land here so just remove the surface;
+	 *
+	 * the DESKTOP role can happen here as well, because we can fall-back 
+	 * to that when we try to determine the role type. Application that
+	 * do not set the app_id will be land here, when destroyed */
+	if (output == NULL && (surface->role == IVI_SURFACE_ROLE_NONE ||
+			       surface->role == IVI_SURFACE_ROLE_DESKTOP))
 		goto skip_output_asignment;
 
 	assert(output != NULL);
