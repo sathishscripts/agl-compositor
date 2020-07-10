@@ -366,6 +366,7 @@ void
 ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -376,6 +377,10 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 
 	struct weston_view *view = surface->view;
 	struct weston_geometry geom;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi))
+		return;
 
 	if (surface->view->is_mapped)
 		return;
@@ -423,6 +428,7 @@ void
 ivi_layout_split_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -439,6 +445,10 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	x = woutput->x;
 	y = woutput->y;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi))
+		return;
 
 	if (surface->view->is_mapped)
 		return;
@@ -508,6 +518,7 @@ void
 ivi_layout_popup_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -517,6 +528,10 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct weston_output *woutput = output->output;
 
 	struct weston_view *view = surface->view;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi))
+		return;
 
 	if (surface->view->is_mapped)
 		return;
