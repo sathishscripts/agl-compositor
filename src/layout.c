@@ -366,6 +366,7 @@ void
 ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -377,6 +378,11 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 
 	struct weston_view *view = surface->view;
 	struct weston_geometry geom;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
+	    !surface->activated_by_default)
+		return;
 
 	if (surface->view->is_mapped)
 		return;
@@ -430,6 +436,7 @@ void
 ivi_layout_split_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -447,6 +454,11 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	x = woutput->x;
 	y = woutput->y;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
+	    !surface->activated_by_default)
+		return;
 
 	if (surface->view->is_mapped)
 		return;
@@ -522,6 +534,7 @@ void
 ivi_layout_popup_committed(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
+	struct ivi_policy *policy = ivi->policy;
 
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
@@ -532,6 +545,11 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct weston_output *woutput = output->output;
 
 	struct weston_view *view = surface->view;
+
+	if (policy && policy->api.surface_activate_by_default &&
+	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
+	    !surface->activated_by_default)
+		return;
 
 	if (surface->view->is_mapped)
 		return;
@@ -580,6 +598,11 @@ ivi_layout_popup_re_add(struct ivi_surface *surface)
 		view->is_mapped = false;
 	}
 
+	/* reset the activate by default in order to (still) allow the surface
+	 * to be activaved using the request */
+	if (!surface->activated_by_default)
+		surface->activated_by_default = true;
+
 	ivi_layout_popup_committed(surface);
 }
 
@@ -593,6 +616,11 @@ ivi_layout_surface_is_split_or_fullscreen(struct ivi_surface *surf)
 	    surf->role != IVI_SURFACE_ROLE_SPLIT_V &&
 	    surf->role != IVI_SURFACE_ROLE_FULLSCREEN)
 		return false;
+
+	/* reset the activate by default in order to (still) allow the surface
+	 * to be activaved using the request */
+	if (!surf->activated_by_default)
+		surf->activated_by_default = true;
 
 	wl_list_for_each(is, &ivi->surfaces, link)
 		if (is == surf)
