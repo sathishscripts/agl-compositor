@@ -84,52 +84,14 @@ ivi_policy_default_surface_advertise_state_change(struct ivi_surface *surf, void
 	return true;
 }
 
-#ifdef HAVE_SMACK
-static bool
-ivi_policy_default_shell_bind_interface(void *client, void *interface)
-{
-	struct wl_interface *shell_interface = interface;
-	struct wl_client *conn_client = client;
-
-	pid_t pid, uid, gid;
-	int client_fd;
-	char *label;
-	bool ret = false;
-
-	wl_client_get_credentials(conn_client, &pid, &uid, &gid);
-
-	client_fd = wl_client_get_fd(conn_client);
-	if (smack_new_label_from_socket(client_fd, &label) < 0) {
-		return ret;
-	}
-
-	if (strcmp(shell_interface->name, "agl_shell") == 0)
-		if (strcmp(label, "User::App::homescreen") == 0)
-			ret = true;
-
-	if (strcmp(shell_interface->name, "agl_shell_desktop") == 0)
-		if (strcmp(label, "User::App::launcher") == 0 ||
-		    strcmp(label, "User::App::alexa-viewer") == 0 ||
-		    strcmp(label, "User::App::tbtnavi") == 0 ||
-		    strcmp(label, "User::App::hvac") == 0)
-			ret = true;
-
-	if (ret)
-		weston_log("Client with pid %d, uid %d, gid %d, allowed "
-				"to bind to %s for label %s\n", pid, uid, gid,
-				shell_interface->name, label);
-
-	/* client responsible for free'ing */
-	free(label);
-	return ret;
-}
-#else
+/* we allow all applications to bind to private extensions. See the deny-all
+ * policy instead for how to retrieve the clients fd and its label to check
+ * against */
 static bool
 ivi_policy_default_shell_bind_interface(void *client, void *interface)
 {
 	return true;
 }
-#endif
 
 static bool
 ivi_policy_default_allow_to_add(void *user_data)

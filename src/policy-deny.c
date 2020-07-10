@@ -33,10 +33,26 @@
 #include <string.h>
 #include "shared/helpers.h"
 
+#ifdef HAVE_SMACK
+static const char *const bind_agl_shell[] = {
+	"User::App::homescreen",
+	"User::App::cluster-gauges"	/* cluster-dashboard */
+};
 
-static const char *const applications_permitted[] = { "homescreen", "alexa-viewer",
-						     "launcher", "hvac",
-						     "navigation", "mediaplayer" };
+static const char *const bind_agl_shell_desktop[] = {
+	"User::App::launcher",
+	"User::App::alexa-viewer",
+	"User::App::tbtnavi",
+	"User::App::hvac",
+	"User::App::xdg-cluster-receiver",		/* cluster-receiver, native XDG app*/
+	"User::App::cluster-receiver"			/* cluster-receiver, Qt app  */
+};
+#endif
+
+static const char *const applications_permitted[] = {
+	"homescreen", "alexa-viewer", "launcher", "hvac",
+	"navigation", "mediaplayer"
+};
 
 /* helper start searches the applications_permitted for the
  * app_id
@@ -50,6 +66,31 @@ ivi_policy_verify_permitted_app(const char *app_id)
 
 	return false;
 }
+
+#ifdef HAVE_SMACK
+/* helper to determine which applications are allowed to bind to the
+ * private extensions
+ */
+static bool
+ivi_policy_check_bind_agl_shell(const char *app_id)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(bind_agl_shell); i++)
+		if (strcmp(app_id, bind_agl_shell[i]) == 0)
+			return true;
+
+	return false;
+}
+
+static bool
+ivi_policy_check_bind_agl_shell_desktop(const char *app_id)
+{
+	for (size_t i = 0; i < ARRAY_LENGTH(bind_agl_shell_desktop); i++)
+		if (strcmp(app_id, bind_agl_shell_desktop[i]) == 0)
+			return true;
+
+	return false;
+}
+#endif
 
 static bool
 ivi_policy_verify_ivi_surface(struct ivi_surface *surf)
@@ -124,15 +165,10 @@ ivi_policy_default_shell_bind_interface(void *client, void *interface)
 	}
 
 	if (strcmp(shell_interface->name, "agl_shell") == 0)
-		if (strcmp(label, "User::App::homescreen") == 0)
-			ret = true;
+		ret = ivi_policy_check_bind_agl_shell(label);
 
 	if (strcmp(shell_interface->name, "agl_shell_desktop") == 0)
-		if (strcmp(label, "User::App::launcher") == 0 ||
-		    strcmp(label, "User::App::alexa-viewer") == 0 ||
-		    strcmp(label, "User::App::tbtnavi") == 0 ||
-		    strcmp(label, "User::App::hvac") == 0)
-			ret = true;
+		ret = ivi_policy_check_bind_agl_shell_desktop(label);
 
 	if (ret)
 		weston_log("Client with pid %d, uid %d, gid %d, allowed "
