@@ -793,8 +793,7 @@ shell_set_panel(struct wl_client *client,
 	weston_desktop_surface_set_size(dsurface, width, height);
 }
 
-
-static void
+void
 shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
 			  const char *data, uint32_t app_state)
 {

@@ -370,6 +370,7 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
+	const char *app_id = weston_desktop_surface_get_app_id(dsurface);
 
 	struct ivi_output *output = surface->split.output;
 	struct weston_output *woutput = output->output;
@@ -397,6 +398,12 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
+
+	shell_advertise_app_state(ivi, app_id,
+				  NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+
+	weston_log("Activation completed for app_id %s, role %s, output %s\n",
+			app_id, ivi_layout_get_surface_role_name(surface), output->name);
 }
 
 void
@@ -427,6 +434,7 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
+	const char *app_id = weston_desktop_surface_get_app_id(dsurface);
 
 	struct ivi_output *output = surface->split.output;
 	struct weston_output *woutput = output->output;
@@ -502,6 +510,12 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
+
+	shell_advertise_app_state(ivi, app_id,
+				  NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+
+	weston_log("Activation completed for app_id %s, role %s, output %s\n",
+			app_id, ivi_layout_get_surface_role_name(surface), output->name);
 }
 
 void
@@ -512,6 +526,7 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct weston_desktop_surface *dsurface = surface->dsurface;
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
+	const char *app_id = weston_desktop_surface_get_app_id(dsurface);
 
 	struct ivi_output *output = surface->popup.output;
 	struct weston_output *woutput = output->output;
@@ -540,6 +555,12 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
+
+	shell_advertise_app_state(ivi, app_id,
+				  NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+
+	weston_log("Activation completed for app_id %s, role %s, output %s\n",
+			app_id, ivi_layout_get_surface_role_name(surface), output->name);
 }
 
 static void
