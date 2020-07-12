@@ -366,24 +366,28 @@ ivi_check_pending_desktop_surface(struct ivi_surface *surface)
 	ret = ivi_check_pending_desktop_surface_popup(surface);
 	if (ret) {
 		ivi_set_desktop_surface_popup(surface);
+		ivi_layout_popup_committed(surface);
 		return;
 	}
 
 	ret = ivi_check_pending_desktop_surface_split(surface);
 	if (ret) {
 		ivi_set_desktop_surface_split(surface);
+		ivi_layout_split_committed(surface);
 		return;
 	}
 
 	ret = ivi_check_pending_desktop_surface_fullscreen(surface);
 	if (ret) {
 		ivi_set_desktop_surface_fullscreen(surface);
+		ivi_layout_fullscreen_committed(surface);
 		return;
 	}
 
 	ret = ivi_check_pending_desktop_surface_remote(surface);
 	if (ret) {
 		ivi_set_desktop_surface_remote(surface);
+		ivi_layout_desktop_committed(surface);
 		return;
 	}
 
