@@ -334,6 +334,9 @@ void
 ivi_layout_activate(struct ivi_output *output, const char *app_id);
 
 void
+ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf);
+
+void
 ivi_layout_desktop_committed(struct ivi_surface *surf);
 
 void

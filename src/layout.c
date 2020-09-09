@@ -334,6 +334,18 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate(r_output, app_id);
 				surf->activated_by_default = true;
+			} else if (!app_id) {
+				/*
+				 * applications not setting an app_id, or
+				 * setting an app_id but at a later point in
+				 * time, might fall-back here so give them a
+				 * chance to receive the configure event and
+				 * act upon it
+				 */
+				weston_log("Surface no app_id, role %s activating by default\n",
+					ivi_layout_get_surface_role_name(surf));
+				ivi_layout_activate_by_surf(r_output, surf);
+				surf->activated_by_default = true;
 			}
 		}
 
@@ -639,16 +651,19 @@ ivi_layout_surface_is_split_or_fullscreen(struct ivi_surface *surf)
 }
 
 void
-ivi_layout_activate(struct ivi_output *output, const char *app_id)
+ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 {
 	struct ivi_compositor *ivi = output->ivi;
-	struct ivi_surface *surf;
 	struct weston_desktop_surface *dsurf;
 	struct weston_view *view;
 	struct weston_geometry geom;
 	struct ivi_policy *policy = output->ivi->policy;
 
-	surf = ivi_find_app(ivi, app_id);
+	dsurf = surf->dsurface;
+	view = surf->view;
+
+	const char *app_id = weston_desktop_surface_get_app_id(dsurf);
+
 	if (!surf)
 		return;
 
@@ -683,8 +698,6 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	}
 
 
-	dsurf = surf->dsurface;
-	view = surf->view;
 	geom = weston_desktop_surface_get_geometry(dsurf);
 
 	if (surf->role == IVI_SURFACE_ROLE_DESKTOP)
@@ -721,6 +734,19 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 				app_id, ivi_layout_get_surface_role_name(surf));
 		weston_output_damage(output->output);
 	}
+}
+
+void
+ivi_layout_activate(struct ivi_output *output, const char *app_id)
+{
+	struct ivi_surface *surf;
+	struct ivi_compositor *ivi = output->ivi;
+
+	surf = ivi_find_app(ivi, app_id);
+	if (!surf)
+		return;
+
+	ivi_layout_activate_by_surf(output, surf);
 }
 
 struct ivi_output *
