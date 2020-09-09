@@ -316,6 +316,15 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		if (!r_output)
 			r_output = ivi_layout_find_bg_output(surf->ivi);
 
+		/* if we couldn't still find an output by this point, there's
+		 * something wrong so we abort with a protocol error */
+		if (!r_output) {
+			wl_resource_post_error(surf->ivi->shell_client.resource,
+					       AGL_SHELL_ERROR_INVALID_ARGUMENT,
+					       "No valid output found to activate surface by default");
+			return;
+		}
+
 		/* use the output of the bg to activate the app on start-up by
 		 * default */
 		if (surf->view && r_output) {
