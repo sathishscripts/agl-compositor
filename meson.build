@@ -65,11 +65,13 @@ endforeach
 
 agl_shell_xml = files('protocol/agl-shell.xml')
 agl_shell_desktop_xml = files('protocol/agl-shell-desktop.xml')
+agl_screenshooter = files('protocol/agl-screenshooter.xml')
 xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
 protocols = [
   { 'name': 'agl-shell', 'source': 'internal' },
   { 'name': 'agl-shell-desktop', 'source': 'internal' },
+  { 'name': 'agl-screenshooter', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
 ]
 
@@ -140,12 +142,15 @@ srcs_agl_compositor = [
 	'src/layout.c',
 	'src/policy.c',
 	'src/shell.c',
+	'src/screenshooter.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
 	agl_shell_server_protocol_h,
 	agl_shell_desktop_server_protocol_h,
+	agl_screenshooter_server_protocol_h,
 	agl_shell_protocol_c,
 	agl_shell_desktop_protocol_c,
+	agl_screenshooter_protocol_c,
 	xdg_shell_protocol_c,
 ]
 

@@ -377,5 +377,7 @@ ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi);
 void
 shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
 			  const char *data, uint32_t app_state);
+void
+ivi_screenshooter_create(struct ivi_compositor *ivi);
 
 #endif
