@@ -53,6 +53,7 @@ struct ivi_compositor {
 	struct wl_listener heads_changed;
 
 	bool init_failed;
+	bool hide_cursor;
 
 	/*
 	 * Options parsed from command line arugments.
@@ -85,6 +86,7 @@ struct ivi_compositor {
 	struct wl_list surfaces; /* ivi_surface.link */
 
 	struct weston_desktop *desktop;
+	struct wl_listener seat_created_listener;
 	struct ivi_policy *policy;
 
 	struct wl_list pending_surfaces;
@@ -233,6 +235,7 @@ struct ivi_surface {
 	struct weston_view *view;
 
 	struct wl_list link;
+	int focus_count;
 
 	struct {
 		enum ivi_surface_flags flags;
@@ -379,5 +382,11 @@ shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
 			  const char *data, uint32_t app_state);
 void
 ivi_screenshooter_create(struct ivi_compositor *ivi);
+
+void
+ivi_seat_init(struct ivi_compositor *ivi);
+
+void
+ivi_seat_reset_caps_sent(struct ivi_compositor *ivi);
 
 #endif
