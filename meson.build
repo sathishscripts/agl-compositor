@@ -73,6 +73,7 @@ protocols = [
   { 'name': 'agl-shell-desktop', 'source': 'internal' },
   { 'name': 'agl-screenshooter', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
+  { 'name': 'xdg-output', 'source': 'unstable', 'version': 'v1' },
 ]
 
 foreach proto: protocols
@@ -225,3 +226,6 @@ install_data(
         [ agl_shell_xml, agl_shell_desktop_xml ],
         install_dir: join_paths(dir_data, dir_data_agl_compositor)
 )
+
+common_inc = [ include_directories('src'), include_directories('.') ]
+subdir('clients')
