@@ -1346,7 +1346,7 @@ usage(int error_code)
 		"  --log=FILE\t\tLog to the given file\n"
 		"  -c, --config=FILE\tConfig file to load, defaults to agl-compositor.ini\n"
 		"  --no-config\t\tDo not read agl-compositor.ini\n"
-		"  --debug\t\tEnable debug extension\n"
+		"  --debug\t\tEnable debug extension(s)\n"
 		"  -h, --help\t\tThis help message\n"
 		"\n");
 	exit(error_code);
@@ -1366,6 +1366,7 @@ int main(int argc, char *argv[])
 	int help = 0;
 	int version = 0;
 	int no_config = 0;
+	int debug = 0;
 	char *config_file = NULL;
 	struct weston_log_context *log_ctx = NULL;
 	struct weston_log_subscriber *logger;
@@ -1378,6 +1379,7 @@ int main(int argc, char *argv[])
 		{ WESTON_OPTION_BOOLEAN, "help", 'h', &help },
 		{ WESTON_OPTION_BOOLEAN, "version", 0, &version },
 		{ WESTON_OPTION_BOOLEAN, "no-config", 0, &no_config },
+		{ WESTON_OPTION_BOOLEAN, "debug", 0, &debug },
 		{ WESTON_OPTION_STRING, "config", 'c', &config_file },
 	};
 
@@ -1389,6 +1391,7 @@ int main(int argc, char *argv[])
 	wl_list_init(&ivi.split_pending_apps);
 	wl_list_init(&ivi.remote_pending_apps);
 	wl_list_init(&ivi.desktop_clients);
+
 
 	/* Prevent any clients we spawn getting our stdin */
 	os_fd_set_cloexec(STDIN_FILENO);
@@ -1402,6 +1405,9 @@ int main(int argc, char *argv[])
 		printf(PACKAGE_STRING "\n");
 		return EXIT_SUCCESS;
 	}
+
+	if (debug)
+		ivi.hide_cursor = true;
 
 	log_ctx = weston_log_ctx_compositor_create();
 	if (!log_ctx) {
@@ -1468,6 +1474,8 @@ int main(int argc, char *argv[])
 
 	if (ivi_desktop_init(&ivi) < 0)
 		goto error_compositor;
+
+	ivi_seat_init(&ivi);
 
 	if (ivi_policy_init(&ivi) < 0)
 		goto error_compositor;

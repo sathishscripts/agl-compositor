@@ -144,6 +144,7 @@ srcs_agl_compositor = [
 	'src/policy.c',
 	'src/shell.c',
 	'src/screenshooter.c',
+	'src/input.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
 	agl_shell_server_protocol_h,

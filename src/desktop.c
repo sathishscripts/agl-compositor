@@ -99,6 +99,9 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	if ((active_output = ivi_layout_find_with_app_id(app_id, ivi)))
 		ivi_set_pending_desktop_surface_remote(active_output, app_id);
 
+	/* reset any caps to make sure we apply the new caps */
+	ivi_seat_reset_caps_sent(ivi);
+
 	if (ivi->shell_client.ready) {
 		ivi_check_pending_desktop_surface(surface);
 		weston_log("Added surface %p, app_id %s, role %s\n", surface,
