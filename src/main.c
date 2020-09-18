@@ -1501,7 +1501,8 @@ int main(int argc, char *argv[])
 
 	ivi_shell_create_global(&ivi);
 	ivi_launch_shell_client(&ivi);
-	ivi_screenshooter_create(&ivi);
+	if (debug)
+		ivi_screenshooter_create(&ivi);
 	ivi_agl_systemd_notify(&ivi);
 
 	wl_display_run(display);
