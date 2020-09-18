@@ -1406,9 +1406,6 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	if (debug)
-		ivi.hide_cursor = true;
-
 	log_ctx = weston_log_ctx_compositor_create();
 	if (!log_ctx) {
 		fprintf(stderr, "Failed to initialize weston debug framework.\n");
@@ -1434,6 +1431,8 @@ int main(int argc, char *argv[])
 		if (!backend)
 			backend = choose_default_backend();
 	}
+	/* from [core] */
+	weston_config_section_get_bool(section, "hide-cursor", &ivi.hide_cursor, false);
 
 	display = wl_display_create();
 	loop = wl_display_get_event_loop(display);
