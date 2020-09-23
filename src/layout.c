@@ -824,6 +824,7 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 
 				weston_layer_entry_remove(&view->layer_link);
 				weston_output_damage(ivi_output->output);
+				ivi_output->active = NULL;
 			}
 		} else {
 			struct weston_desktop_surface *dsurface;
