@@ -243,6 +243,7 @@ struct ivi_surface {
 		int32_t width, height;
 	} pending;
 	bool activated_by_default;
+	bool advertised_on_launch;
 
 	enum ivi_surface_role role;
 	union {
@@ -254,6 +255,9 @@ struct ivi_surface {
 		struct ivi_split_surface split;
 		struct ivi_remote_surface remote;
 	};
+
+	struct wl_listener listener_advertise_app;
+	struct wl_signal signal_advertise_app;
 };
 
 struct ivi_shell_client {
@@ -389,4 +393,7 @@ ivi_seat_init(struct ivi_compositor *ivi);
 void
 ivi_seat_reset_caps_sent(struct ivi_compositor *ivi);
 
+void
+agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
+					   struct ivi_surface *surface);
 #endif

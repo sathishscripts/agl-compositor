@@ -45,11 +45,14 @@
 static void
 create_black_surface_view(struct ivi_output *output);
 
-static void
+void
 agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 					   struct ivi_surface *surface)
 {
 	struct desktop_client *dclient;
+
+	if (surface->advertised_on_launch)
+		return;
 
 	/* advertise to all desktop clients the new surface */
 	wl_list_for_each(dclient, &ivi->desktop_clients, link) {
@@ -60,6 +63,7 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 			return;
 		}
 		agl_shell_desktop_send_application(dclient->resource, app_id);
+		surface->advertised_on_launch = true;
 	}
 }
 

@@ -43,6 +43,16 @@ get_default_output(struct weston_compositor *compositor)
 #endif
 
 static void
+desktop_advertise_app(struct wl_listener *listener, void *data)
+{
+	struct ivi_surface *surface;
+
+	surface = wl_container_of(listener, surface, listener_advertise_app);
+
+	agl_shell_desktop_advertise_application_id(surface->ivi, surface);
+}
+
+static void
 desktop_ping_timeout(struct weston_desktop_client *dclient, void *userdata)
 {
 	/* not supported */
@@ -84,6 +94,13 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->dsurface = dsurface;
 	surface->role = IVI_SURFACE_ROLE_NONE;
 	surface->activated_by_default = false;
+	surface->advertised_on_launch = false;
+
+	wl_signal_init(&surface->signal_advertise_app);
+
+	surface->listener_advertise_app.notify = desktop_advertise_app;
+	wl_signal_add(&surface->signal_advertise_app,
+		      &surface->listener_advertise_app);
 
 	weston_desktop_surface_set_user_data(dsurface, surface);
 
@@ -140,6 +157,9 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_desktop_surface_get_surface(dsurface);
 
 	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
+
+	wl_list_remove(&surface->listener_advertise_app.link);
+	surface->listener_advertise_app.notify = NULL;
 
 	/* special corner-case, pending_surfaces which are never activated or
 	 * being assigned an output might land here so just remove the surface;
@@ -236,6 +256,9 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 	if (policy && policy->api.surface_commited &&
 	    !policy->api.surface_commited(surface, surface->ivi))
 		return;
+
+	if (!surface->advertised_on_launch)
+		wl_signal_emit(&surface->signal_advertise_app, surface);
 
 	weston_compositor_schedule_repaint(surface->ivi->compositor);
 
