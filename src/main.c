@@ -57,6 +57,10 @@
 #include "remote.h"
 #endif
 
+#ifdef HAVE_WALTHAM
+#include <waltham-transmitter/transmitter_api.h>
+#endif
+
 static int cached_tm_mday = -1;
 static struct weston_log_scope *log_scope;
 
@@ -563,6 +567,38 @@ heads_changed(struct wl_listener *listener, void *arg)
 	}
 }
 
+#ifdef HAVE_WALTHAM
+static int
+load_waltham_plugin(struct ivi_compositor *ivi, struct weston_config *config)
+{
+	struct weston_compositor *compositor = ivi->compositor;
+	int (*module_init)(struct weston_compositor *wc);
+
+	module_init = weston_load_module("waltham-transmitter.so",
+					 "wet_module_init");
+	if (!module_init)
+		return -1;
+
+	if (module_init(compositor) < 0)
+		return -1;
+
+	ivi->waltham_transmitter_api = weston_get_transmitter_api(compositor);
+	if (!ivi->waltham_transmitter_api) {
+		weston_log("Failed to load waltham-transmitter plugin.\n");
+		return -1;
+	}
+
+	weston_log("waltham-transmitter plug-in loaded\n");
+	return 0;
+}
+#else
+static int
+load_waltham_plugin(struct ivi_compositor *ivi, struct weston_config *config)
+{
+	return -1;
+}
+#endif
+
 #ifdef HAVE_REMOTING
 static int
 drm_backend_remoted_output_configure(struct weston_output *output,
@@ -809,6 +845,7 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 	}
 
 	load_remoting_plugin(ivi, ivi->config);
+	load_waltham_plugin(ivi, ivi->config);
 
 error:
 	free(config.gbm_format);
