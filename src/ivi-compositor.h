@@ -70,6 +70,7 @@ struct ivi_compositor {
 	const struct weston_windowed_output_api *window_api;
 	const struct weston_drm_output_api *drm_api;
 	const struct weston_remoting_api *remoting_api;
+	const struct weston_transmitter_api *waltham_transmitter_api;
 
 	struct wl_global *agl_shell;
 	struct wl_global *agl_shell_desktop;
