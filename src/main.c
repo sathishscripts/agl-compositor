@@ -57,6 +57,10 @@
 #include "remote.h"
 #endif
 
+#ifdef HAVE_WALTHAM
+#include <waltham-transmitter/transmitter_api.h>
+#endif
+
 static int cached_tm_mday = -1;
 static struct weston_log_scope *log_scope;
 
@@ -557,6 +561,38 @@ heads_changed(struct wl_listener *listener, void *arg)
 		}
 	}
 }
+
+#ifdef HAVE_WALTHAM
+static int
+load_waltham_plugin(struct ivi_compositor *ivi, struct weston_config *config)
+{
+	struct weston_compositor *compositor = ivi->compositor;
+	int (*module_init)(struct weston_compositor *wc);
+
+	module_init = weston_load_module("waltham-transmitter.so",
+					 "wet_module_init");
+	if (!module_init)
+		return -1;
+
+	if (module_init(compositor) < 0)
+		return -1;
+
+	ivi->waltham_transmitter_api = weston_get_transmitter_api(compositor);
+	if (!ivi->waltham_transmitter_api) {
+		weston_log("Failed to load waltham-transmitter plugin.\n");
+		return -1;
+	}
+
+	weston_log("waltham-transmitter plug-in loaded\n");
+	return 0;
+}
+#else
+static int
+load_waltham_plugin(struct ivi_compositor *ivi, struct weston_config *config)
+{
+	return -1;
+}
+#endif
 
 #ifdef HAVE_REMOTING
 static int
@@ -1367,6 +1403,7 @@ int main(int argc, char *argv[])
 	int version = 0;
 	int no_config = 0;
 	int debug = 0;
+	int waltham = 0;
 	char *config_file = NULL;
 	struct weston_log_context *log_ctx = NULL;
 	struct weston_log_subscriber *logger;
@@ -1380,6 +1417,7 @@ int main(int argc, char *argv[])
 		{ WESTON_OPTION_BOOLEAN, "version", 0, &version },
 		{ WESTON_OPTION_BOOLEAN, "no-config", 0, &no_config },
 		{ WESTON_OPTION_BOOLEAN, "debug", 0, &debug },
+		{ WESTON_OPTION_BOOLEAN, "waltham", 0, &waltham },
 		{ WESTON_OPTION_STRING, "config", 'c', &config_file },
 	};
 
@@ -1488,6 +1526,9 @@ int main(int argc, char *argv[])
 
 	if (ivi.remoting_api)
 		ivi_enable_remote_outputs(&ivi);
+
+	if (waltham)
+		load_waltham_plugin(&ivi, ivi.config);
 
 	ivi_shell_init_black_fs(&ivi);
 

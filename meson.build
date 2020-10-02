@@ -53,15 +53,28 @@ depnames = [
   'gobject-2.0', 'glib-2.0'
 ]
 
+depnames_waltham = [
+  'waltham'
+]
+
 deps_remoting = []
 foreach depname : depnames
   dep = dependency(depname, required: false)
   if not dep.found()
     message('Remoting requires @0@ which was not found. '.format(depname))
   endif
-deps_remoting += dep
+  deps_remoting += dep
 endforeach
 
+
+deps_waltham = []
+foreach depname : depnames_waltham
+  dep = dependency(depname, required: false)
+  if not dep.found()
+    message('Waltham requires @0@ which was not found. '.format(depname))
+  endif
+  deps_waltham += dep
+endforeach
 
 agl_shell_xml = files('protocol/agl-shell.xml')
 agl_shell_desktop_xml = files('protocol/agl-shell-desktop.xml')
@@ -195,6 +208,11 @@ endif
 if deps_remoting.length() == depnames.length()
   config_h.set('HAVE_REMOTING', 1)
   message('Found remoting depends, enabling remoting')
+endif
+
+if deps_waltham.length() == depnames_waltham.length()
+  config_h.set('HAVE_WALTHAM', 1)
+  message('Found waltham depends, enabling waltham')
 endif
 
 if dep_libsmack.found()
