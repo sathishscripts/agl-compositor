@@ -241,6 +241,9 @@ ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;
 
+	if (!app_id)
+		return NULL;
+
 	wl_list_for_each(out, &ivi->outputs, link) {
 		if (!out->app_id)
 			continue;
