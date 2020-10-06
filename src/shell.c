@@ -576,6 +576,9 @@ create_black_surface_view(struct ivi_output *output)
 	struct weston_compositor *wc= ivi->compositor;
 	struct weston_output *woutput = output->output;
 
+	if (!woutput)
+		return;
+
 	surface = weston_surface_create(wc);
 	view = weston_view_create(surface);
 
@@ -623,9 +626,9 @@ insert_black_surface(struct ivi_output *output)
 {
 	struct weston_view *view;
 
-	if (!output &&
+	if ((!output &&
 	    !output->fullscreen_view.fs &&
-	    !output->fullscreen_view.fs->view) {
+	    !output->fullscreen_view.fs->view) || !output->output) {
 		weston_log("Output %s doesn't have a surface installed!\n", output->name);
 		return;
 	}
