@@ -55,6 +55,10 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 	wl_list_for_each(dclient, &ivi->desktop_clients, link) {
 		const char *app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
+		if (app_id == NULL) {
+			weston_log("WARNING app_is is null, unable to advertise\n");
+			return;
+		}
 		agl_shell_desktop_send_application(dclient->resource, app_id);
 	}
 }
@@ -442,6 +446,10 @@ ivi_shell_advertise_xdg_surfaces(struct ivi_compositor *ivi, struct wl_resource 
 	wl_list_for_each(surface, &ivi->surfaces, link) {
 		const char *app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
+		if (app_id == NULL) {
+			weston_log("WARNING app_is is null, unable to advertise\n");
+			return;
+		}
 		agl_shell_desktop_send_application(resource, app_id);
 	}
 }
@@ -805,6 +813,9 @@ shell_advertise_app_state(struct ivi_compositor *ivi, const char *app_id,
 	/* FIXME: should queue it here and see when binding agl-shell-desktop
 	 * if there are any to be sent */
 	if (!surf)
+		return;
+
+	if (!app_id)
 		return;
 
 	if (policy && policy->api.surface_advertise_state_change &&
