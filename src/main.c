@@ -1489,10 +1489,10 @@ int main(int argc, char *argv[])
 	if (ivi.remoting_api)
 		ivi_enable_remote_outputs(&ivi);
 
-	ivi_shell_init_black_fs(&ivi);
-
 	if (create_listening_socket(display, socket_name) < 0)
 		goto error_compositor;
+
+	ivi_shell_init_black_fs(&ivi);
 
 	ivi.compositor->exit = handle_exit;
 
