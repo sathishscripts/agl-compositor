@@ -652,7 +652,7 @@ ivi_enable_waltham_outputs(struct ivi_compositor *ivi, struct weston_config *con
 		ivi_output = zalloc(sizeof(*ivi_output));
 
 		ivi_output->ivi = ivi;
-		ivi_output->name = _name;
+		ivi_output->name = transmitter_output_name;
 		ivi_output->config = transmitter_section;
 		/* waltham creates the output */
 		ivi_output->output =
@@ -664,10 +664,13 @@ ivi_enable_waltham_outputs(struct ivi_compositor *ivi, struct weston_config *con
 		weston_output_add_destroy_listener(ivi_output->output,
 						   &ivi_output->output_destroy);
 
+		ivi_output->type = OUTPUT_WALTHAM;
+
 		wl_list_insert(&ivi->outputs, &ivi_output->link);
 		ivi_output_configure_app_id(ivi_output);
 
-		free(transmitter_output_name);
+		/* FIXME: handle it correctly? */
+		/* free(transmitter_output_name); */
 	}
 }
 #else

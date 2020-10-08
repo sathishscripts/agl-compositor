@@ -96,8 +96,11 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 
 	app_id = weston_desktop_surface_get_app_id(dsurface);
 
-	if ((active_output = ivi_layout_find_with_app_id(app_id, ivi)))
+	if ((active_output = ivi_layout_find_with_app_id(app_id, ivi))) {
+		weston_log("Found active_output %s for app_id %s\n",
+				active_output->output->name, app_id);
 		ivi_set_pending_desktop_surface_remote(active_output, app_id);
+	}
 
 	/* reset any caps to make sure we apply the new caps */
 	ivi_seat_reset_caps_sent(ivi);
