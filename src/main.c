@@ -748,6 +748,7 @@ ivi_enable_remote_outputs(struct ivi_compositor *ivi)
 		ivi_output->ivi = ivi;
 		ivi_output->name = _name;
 		ivi_output->config = remote_section;
+		ivi_output->type = OUTPUT_REMOTE;
 
 		if (remote_output_init(ivi_output, ivi->compositor,
 				       remote_section, ivi->remoting_api)) {

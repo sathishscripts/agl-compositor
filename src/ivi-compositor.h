@@ -106,6 +106,14 @@ struct ivi_compositor {
 
 struct ivi_surface;
 
+enum ivi_output_type {
+	OUTPUT_LOCAL,
+	OUTPUT_REMOTE,
+	/* same as remote but we need to signal the transmitter plug-in
+	 * for the surfaces to have to be forwarded to those remoted outputs */
+	OUTPUT_WALTHAM,
+};
+
 struct ivi_output {
 	struct wl_list link; /* ivi_compositor.outputs */
 	struct ivi_compositor *ivi;
@@ -144,6 +152,7 @@ struct ivi_output {
 	struct weston_head *add[8];
 
 	char *app_id;
+	enum ivi_output_type type;
 };
 
 enum ivi_surface_role {
