@@ -766,6 +766,58 @@ ivi_enable_remote_outputs(struct ivi_compositor *ivi)
 	}
 }
 
+static void
+ivi_enable_waltham_outputs(struct ivi_compositor *ivi)
+{
+	struct weston_config_section *transmitter_section = NULL;
+	const char *sect_name;
+	struct weston_config *config = ivi->config;
+
+	while (weston_config_next_section(config, &transmitter_section, &sect_name)) {
+		if (strcmp(sect_name, "transmitter-output"))
+			continue;
+
+		struct ivi_output *ivi_output = NULL;
+		bool output_found = false;
+		char *_name = NULL;
+
+		weston_config_section_get_string(transmitter_section,
+				"name", &_name, NULL);
+		wl_list_for_each(ivi_output, &ivi->outputs, link) {
+			if (!strcmp(ivi_output->name, _name)) {
+				output_found = true;
+				break;
+			}
+		}
+
+		if (output_found) {
+			free(_name);
+			continue;
+		}
+
+		ivi_output = zalloc(sizeof(*ivi_output));
+
+		ivi_output->ivi = ivi;
+		ivi_output->name = _name;
+		ivi_output->config = transmitter_section;
+
+		if (remote_output_init(ivi_output, ivi->compositor,
+					transmitter_section, ivi->remoting_api)) {
+			free(ivi_output->name);
+			free(ivi_output);
+			continue;
+		}
+
+		ivi_output->type = OUTPUT_WALTHAM;
+		ivi_output->output_destroy.notify = handle_output_destroy;
+		weston_output_add_destroy_listener(ivi_output->output,
+				&ivi_output->output_destroy);
+
+		wl_list_insert(&ivi->outputs, &ivi_output->link);
+		ivi_output_configure_app_id(ivi_output);
+	}
+}
+
 static int
 load_remoting_plugin(struct ivi_compositor *ivi, struct weston_config *config)
 {
@@ -1525,6 +1577,9 @@ int main(int argc, char *argv[])
 
 	if (ivi.remoting_api)
 		ivi_enable_remote_outputs(&ivi);
+
+	if (ivi.waltham_transmitter_api)
+		ivi_enable_waltham_outputs(&ivi);
 
 	if (create_listening_socket(display, socket_name) < 0)
 		goto error_compositor;
