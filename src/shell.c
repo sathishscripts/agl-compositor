@@ -107,6 +107,20 @@ ivi_set_desktop_surface_fullscreen(struct ivi_surface *surface)
 	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
+void
+ivi_destroy_waltham_destroy(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	const struct weston_transmitter_api *api =
+		ivi->waltham_transmitter_api;
+
+	if (!api)
+		return;
+
+	if (surface->waltham_surface.transmitter_surface)
+		api->surface_destroy(surface->waltham_surface.transmitter_surface);
+}
+
 static void
 ivi_output_notify_waltham_plugin(struct ivi_surface *surface)
 {
