@@ -239,6 +239,14 @@ enum ivi_surface_flags {
 	IVI_SURFACE_PROP_POSITION = (1 << 1),
 };
 
+/* the waltham surface is a pointer type as well and
+ * in order to avoid adding ifdef for waltham use a
+ * generic pointer, which will be only be valid when the
+ * surface is a remote out on a waltham type of output */
+struct ivi_surface_waltham {
+	void *transmitter_surface;
+};
+
 struct ivi_surface {
 	struct ivi_compositor *ivi;
 	struct weston_desktop_surface *dsurface;
@@ -266,6 +274,7 @@ struct ivi_surface {
 		struct ivi_remote_surface remote;
 	};
 
+	struct ivi_surface_waltham waltham_surface;
 	struct wl_listener listener_advertise_app;
 	struct wl_signal signal_advertise_app;
 };
