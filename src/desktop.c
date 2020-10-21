@@ -196,14 +196,12 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	 * surface view if there's no background set for that output
 	 */
 	if (desktop_surface_check_last_remote_surfaces(output->ivi,
-	    IVI_SURFACE_ROLE_REMOTE))
+		IVI_SURFACE_ROLE_REMOTE) ||
+	    desktop_surface_check_last_remote_surfaces(output->ivi,
+		IVI_SURFACE_ROLE_DESKTOP))
 		if (!output->background)
 			insert_black_surface(output);
 
-	if (desktop_surface_check_last_remote_surfaces(output->ivi,
-	    IVI_SURFACE_ROLE_DESKTOP))
-		if (!output->background)
-			insert_black_surface(output);
 
 	if (weston_surface_is_mapped(wsurface)) {
 		weston_desktop_surface_unlink_view(surface->view);
