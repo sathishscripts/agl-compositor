@@ -195,10 +195,10 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	/* check if there's a last 'remote' surface and insert a black
 	 * surface view if there's no background set for that output
 	 */
-	if (desktop_surface_check_last_remote_surfaces(output->ivi,
+	if ((desktop_surface_check_last_remote_surfaces(output->ivi,
 		IVI_SURFACE_ROLE_REMOTE) ||
 	    desktop_surface_check_last_remote_surfaces(output->ivi,
-		IVI_SURFACE_ROLE_DESKTOP))
+		IVI_SURFACE_ROLE_DESKTOP)) && output->type == OUTPUT_REMOTE)
 		if (!output->background)
 			insert_black_surface(output);
 
