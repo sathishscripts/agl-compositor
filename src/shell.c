@@ -159,7 +159,8 @@ ivi_output_notify_waltham_plugin(struct ivi_surface *surface)
 	 * wthp_ivi_app_id_surface_create() and is responsible for setting-up
 	 * the gstreamer pipeline as well.
 	 */
-	api->surface_push_to_remote(weston_surface, app_id, trans_remote, NULL);
+	surface->waltham_surface.transmitter_surface =
+	    api->surface_push_to_remote(weston_surface, app_id, trans_remote, NULL);
 }
 
 static void
