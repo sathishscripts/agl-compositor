@@ -262,6 +262,7 @@ struct ivi_surface {
 	} pending;
 	bool activated_by_default;
 	bool advertised_on_launch;
+	bool checked_pending;
 
 	enum ivi_surface_role role;
 	union {

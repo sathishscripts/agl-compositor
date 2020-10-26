@@ -747,6 +747,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
 		wl_list_remove(&surface->link);
 		ivi_check_pending_desktop_surface(surface);
+		surface->checked_pending = true;
 	}
 }
 
@@ -786,6 +787,7 @@ shell_set_background(struct wl_client *client,
 		return;
 	}
 
+	surface->checked_pending = true;
 	surface->role = IVI_SURFACE_ROLE_BACKGROUND;
 	surface->bg.output = output;
 	wl_list_remove(&surface->link);
@@ -858,6 +860,7 @@ shell_set_panel(struct wl_client *client,
 		return;
 	}
 
+	surface->checked_pending = true;
 	surface->role = IVI_SURFACE_ROLE_PANEL;
 	surface->panel.output = output;
 	surface->panel.edge = edge;

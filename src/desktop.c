@@ -95,6 +95,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->role = IVI_SURFACE_ROLE_NONE;
 	surface->activated_by_default = false;
 	surface->advertised_on_launch = false;
+	surface->checked_pending = false;
 
 	wl_signal_init(&surface->signal_advertise_app);
 
@@ -119,20 +120,17 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	/* reset any caps to make sure we apply the new caps */
 	ivi_seat_reset_caps_sent(ivi);
 
-	if (ivi->shell_client.ready) {
-		ivi_check_pending_desktop_surface(surface);
-		weston_log("Added surface %p, app_id %s, role %s\n", surface,
-				app_id, ivi_layout_get_surface_role_name(surface));
-	} else {
-		/*
-		 * We delay creating "normal" desktop surfaces until later, to
-		 * give the shell-client an oppurtunity to set the surface as a
-		 * background/panel.
-		 */
-		weston_log("Added surface %p, app_id %s to pending list\n",
-				surface, app_id);
-		wl_list_insert(&ivi->pending_surfaces, &surface->link);
-	}
+	/*
+	 * We delay creating "normal" desktop surfaces until later, to
+	 * give the shell-client an oppurtunity to set the surface as a
+	 * background/panel.
+	 * Also delay the creation in order to have a valid app_id
+	 * which will be used to set the proper role.
+	 */
+	weston_log("Added surface %p, app_id %s to pending list\n",
+			surface, app_id);
+	wl_list_insert(&ivi->pending_surfaces, &surface->link);
+
 }
 
 static bool
@@ -251,6 +249,7 @@ static void
 desktop_committed(struct weston_desktop_surface *dsurface, 
 		  int32_t sx, int32_t sy, void *userdata)
 {
+	struct ivi_compositor *ivi = userdata;
 	struct ivi_surface *surface =
 		weston_desktop_surface_get_user_data(dsurface);
 	struct ivi_policy *policy = surface->ivi->policy;
@@ -258,6 +257,16 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 	if (policy && policy->api.surface_commited &&
 	    !policy->api.surface_commited(surface, surface->ivi))
 		return;
+
+	if (ivi->shell_client.ready && !surface->checked_pending) {
+		const char * app_id =	weston_desktop_surface_get_app_id(dsurface);
+		weston_log("Checking pending surface %p, app_id %s\n", surface,
+			app_id);
+		wl_list_remove(&surface->link);
+		wl_list_init(&surface->link);
+		ivi_check_pending_desktop_surface(surface);
+		surface->checked_pending = true;
+	}
 
 	if (!surface->advertised_on_launch)
 		wl_signal_emit(&surface->signal_advertise_app, surface);
