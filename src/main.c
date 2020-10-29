@@ -74,6 +74,11 @@ handle_output_destroy(struct wl_listener *listener, void *data)
 	output = wl_container_of(listener, output, output_destroy);
 	assert(output->output == data);
 
+	if (output->fullscreen_view.fs->view) {
+		weston_surface_destroy(output->fullscreen_view.fs->view->surface);
+		output->fullscreen_view.fs->view = NULL;
+	}
+
 	output->output = NULL;
 	wl_list_remove(&output->output_destroy.link);
 }

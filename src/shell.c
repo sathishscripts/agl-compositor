@@ -561,13 +561,8 @@ destroy_black_view(struct wl_listener *listener, void *data)
 
 
 	if (fs && fs->fs) {
-		if (fs->fs->view && fs->fs->view->surface) {
-			weston_surface_destroy(fs->fs->view->surface);
-			fs->fs->view = NULL;
-		}
-
-		free(fs->fs);
 		wl_list_remove(&fs->fs_destroy.link);
+		free(fs->fs);
 	}
 }
 
