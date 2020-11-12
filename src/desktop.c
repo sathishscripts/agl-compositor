@@ -268,7 +268,8 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		surface->checked_pending = true;
 	}
 
-	if (!surface->advertised_on_launch)
+	if (!surface->advertised_on_launch &&
+	    !wl_list_empty(&surface->ivi->desktop_clients))
 		wl_signal_emit(&surface->signal_advertise_app, surface);
 
 	weston_compositor_schedule_repaint(surface->ivi->compositor);
