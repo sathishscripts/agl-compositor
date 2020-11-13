@@ -96,6 +96,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->activated_by_default = false;
 	surface->advertised_on_launch = false;
 	surface->checked_pending = false;
+	wl_list_init(&surface->link);
 
 	wl_signal_init(&surface->signal_advertise_app);
 
@@ -238,9 +239,7 @@ skip_output_asignment:
 			weston_desktop_surface_get_app_id(dsurface),
 			ivi_layout_get_surface_role_name(surface));
 
-	/* we weren't added to any list if we are still with 'none' as role */
-	if (surface->role != IVI_SURFACE_ROLE_NONE)
-		wl_list_remove(&surface->link);
+	wl_list_remove(&surface->link);
 
 	free(surface);
 }
