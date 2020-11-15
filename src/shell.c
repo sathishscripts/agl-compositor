@@ -746,6 +746,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
 		wl_list_remove(&surface->link);
+		wl_list_init(&surface->link);
 		ivi_check_pending_desktop_surface(surface);
 		surface->checked_pending = true;
 	}
