@@ -107,6 +107,7 @@ ivi_set_desktop_surface_fullscreen(struct ivi_surface *surface)
 	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
+#ifdef HAVE_WALTHAM
 void
 ivi_destroy_waltham_destroy(struct ivi_surface *surface)
 {
@@ -176,6 +177,17 @@ ivi_output_notify_waltham_plugin(struct ivi_surface *surface)
 	surface->waltham_surface.transmitter_surface =
 	    api->surface_push_to_remote(weston_surface, app_id, trans_remote, NULL);
 }
+
+#else
+void
+ivi_destroy_waltham_destroy(struct ivi_surface *surface)
+{
+}
+static void
+ivi_output_notify_waltham_plugin(struct ivi_surface *surface)
+{
+}
+#endif
 
 static void
 ivi_set_desktop_surface_remote(struct ivi_surface *surface)

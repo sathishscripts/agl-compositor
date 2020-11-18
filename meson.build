@@ -73,10 +73,11 @@ depnames_waltham = [
 deps_waltham = []
 foreach depname : depnames_waltham
   dep = dependency(depname, required: false)
-  if not dep.found()
+  if dep.found()
+    deps_waltham += dep
+  else
     message('Waltham requires @0@ which was not found. '.format(depname))
   endif
-  deps_waltham += dep
 endforeach
 
 deps_waltham += deps_remoting
