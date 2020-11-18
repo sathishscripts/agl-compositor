@@ -54,6 +54,7 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 					   struct ivi_surface *surface)
 {
 	struct desktop_client *dclient;
+	static bool display_adv = false;
 
 	if (surface->advertised_on_launch)
 		return;
@@ -63,7 +64,10 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 		const char *app_id =
 			weston_desktop_surface_get_app_id(surface->dsurface);
 		if (app_id == NULL) {
-			weston_log("WARNING app_is is null, unable to advertise\n");
+			if (!display_adv) {
+				weston_log("WARNING app_is is null, unable to advertise\n");
+				display_adv = true;
+			}
 			return;
 		}
 		agl_shell_desktop_send_application(dclient->resource, app_id);
