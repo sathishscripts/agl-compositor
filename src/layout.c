@@ -745,6 +745,9 @@ ivi_layout_activate(struct ivi_output *output, const char *app_id)
 	struct ivi_surface *surf;
 	struct ivi_compositor *ivi = output->ivi;
 
+	if (!app_id)
+		return;
+
 	surf = ivi_find_app(ivi, app_id);
 	if (!surf)
 		return;
@@ -797,6 +800,9 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 	struct ivi_surface *surf;
 	struct ivi_output *ivi_output;
 	struct ivi_policy *policy = ivi->policy;
+
+	if (!app_id)
+		return;
 
 	surf = ivi_find_app(ivi, app_id);
 	if (!surf)
