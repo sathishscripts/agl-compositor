@@ -1,5 +1,5 @@
 project('agl-compositor',
-  'c',
+  'c','cpp',
   version: '0.0.18',
   default_options: [
     'warning_level=3',
@@ -15,6 +15,8 @@ libweston_version = 'libweston-8'
 pkgconfig = import('pkgconfig')
 
 cc = meson.get_compiler('c')
+cxx = meson.get_compiler('cpp')
+
 add_project_arguments(
   cc.get_supported_arguments([
     '-Wno-unused-parameter',
@@ -182,6 +184,10 @@ if policy_to_install == 'auto' or policy_to_install == 'allow-all'
 elif policy_to_install == 'deny-all'
   srcs_agl_compositor += 'src/policy-deny.c'
   message('Installing deny all policy')
+elif policy_to_install == 'rba'
+  srcs_agl_compositor += ['src/policy-rba.c', 'src/rba_adapter.cpp']
+  deps_libweston += dependency('librba')
+  message('Installing rba policy')
 endif
 
 
