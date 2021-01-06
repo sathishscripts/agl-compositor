@@ -190,9 +190,14 @@ endif
 # '-I/extra/include/dir, but this should only be used in exceptional cases for
 # includes that can't be detected via pkg-config and passed via dependencies.
 if libweston_dep.found()
-  if not prefix_path.contains('/usr')
-    dir_path_x11_backend = join_paths(prefix_path, 'include', libweston_version, 'libweston', 'backend-x11.h')
+  if not meson.is_cross_build()
+    if not prefix_path.contains('/usr')
+      dir_path_x11_backend = join_paths(prefix_path, 'include', libweston_version, 'libweston', 'backend-x11.h')
+    else
+      dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-x11.h')
+    endif
   else
+    message('Building with cross environment')
     dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-x11.h')
   endif
 
