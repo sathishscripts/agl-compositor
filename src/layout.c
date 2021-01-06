@@ -328,6 +328,12 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			return;
 		}
 
+		if (!surf->ivi->activate_by_default) {
+			weston_log("Refusing to activate surface role %d, app_id %s\n",
+					surf->role, app_id);
+			return;
+		}
+
 		/* use the output of the bg to activate the app on start-up by
 		 * default */
 		if (surf->view && r_output) {

@@ -1527,6 +1527,7 @@ int main(int argc, char *argv[])
 	}
 	/* from [core] */
 	weston_config_section_get_bool(section, "hide-cursor", &ivi.hide_cursor, false);
+	weston_config_section_get_bool(section, "activate-by-default", &ivi.activate_by_default, true);
 
 	display = wl_display_create();
 	loop = wl_display_get_event_loop(display);

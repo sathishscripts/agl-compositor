@@ -54,6 +54,7 @@ struct ivi_compositor {
 
 	bool init_failed;
 	bool hide_cursor;
+	bool activate_by_default;
 
 	/*
 	 * Options parsed from command line arugments.
