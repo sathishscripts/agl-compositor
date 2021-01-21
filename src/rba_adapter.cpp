@@ -52,12 +52,11 @@ bool rba_adapter_initialize(void)
 			weston_log("RBAmodel is NULL\n");
 			return false;
 		}
-		arb = new rba::RBAArbitrator();
+		arb = new rba::RBAArbitrator(model);
 		if (arb == nullptr) {
 			weston_log("RBAArbitrator is NULL\n");
 			return false;
 		}
-		arb->setModel(model);
 		return true;
 	}
 	weston_log("RBAArbitrator model is already created\n");
