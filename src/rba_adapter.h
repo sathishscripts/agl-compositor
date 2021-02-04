@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 bool rba_adapter_initialize(void);
-bool rba_adapter_arbitrate(const char *app_id);
+bool rba_adapter_arbitrate(const char *app_id, struct ivi_compositor *ivi);
 #ifdef __cplusplus
 }
 #endif

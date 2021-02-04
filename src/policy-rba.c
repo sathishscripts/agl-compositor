@@ -51,7 +51,7 @@ ivi_policy_rba_surface_activate(struct ivi_surface *surf, void *user_data)
 		weston_log("app_id is NULL, surface activation failed.\n");
 		return false;
 	}
-	return rba_adapter_arbitrate(app_id);
+	return rba_adapter_arbitrate(app_id,surf->ivi);
 }
 
 static bool
