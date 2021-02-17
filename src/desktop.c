@@ -30,6 +30,8 @@
 #include <libweston/libweston.h>
 #include <libweston-desktop/libweston-desktop.h>
 
+#include "agl-shell-desktop-server-protocol.h"
+
 #if 0
 static struct weston_output *
 get_default_output(struct weston_compositor *compositor)
@@ -154,11 +156,14 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_desktop_surface_get_user_data(dsurface);
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
+	const char *app_id = NULL;
 
 	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
 
 	wl_list_remove(&surface->listener_advertise_app.link);
 	surface->listener_advertise_app.notify = NULL;
+
+	app_id = weston_desktop_surface_get_app_id(dsurface);
 
 	/* special corner-case, pending_surfaces which are never activated or
 	 * being assigned an output might land here so just remove the surface;
@@ -236,8 +241,10 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 
 skip_output_asignment:
 	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
-			weston_desktop_surface_get_app_id(dsurface),
-			ivi_layout_get_surface_role_name(surface));
+			app_id, ivi_layout_get_surface_role_name(surface));
+
+	shell_advertise_app_state(output->ivi, app_id,
+				  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
 
 	wl_list_remove(&surface->link);
 

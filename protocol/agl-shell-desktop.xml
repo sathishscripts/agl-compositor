@@ -43,6 +43,7 @@
     <enum name="app_state">
       <entry name="activated" value="0"/>
       <entry name="deactivated" value="1"/>
+      <entry name="destroyed" value="2"/>
     </enum>
 
     <event name="application">
