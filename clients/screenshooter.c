@@ -150,6 +150,8 @@ static const struct wl_output_listener output_listener = {
 	display_handle_mode,
 	display_handle_done,
 	display_handle_scale,
+	NULL,
+	NULL
 };
 
 static void
