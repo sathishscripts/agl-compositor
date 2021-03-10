@@ -243,8 +243,9 @@ skip_output_asignment:
 	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
 			app_id, ivi_layout_get_surface_role_name(surface));
 
-	shell_advertise_app_state(output->ivi, app_id,
-				  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
+	if (app_id && output)
+		shell_advertise_app_state(output->ivi, app_id,
+					  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
 
 	wl_list_remove(&surface->link);
 
