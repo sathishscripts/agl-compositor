@@ -27,6 +27,7 @@
 #include "ivi-compositor.h"
 #include "policy.h"
 
+#include "shared/helpers.h"
 #include <libweston/libweston.h>
 #include <libweston-desktop/libweston-desktop.h>
 
@@ -66,6 +67,43 @@ desktop_pong(struct weston_desktop_client *dclient, void *userdata)
 	/* not supported */
 }
 
+struct weston_output *
+get_default_output(struct weston_compositor *compositor)
+{
+	if (wl_list_empty(&compositor->output_list))
+		return NULL;
+
+	return container_of(compositor->output_list.next,
+			struct weston_output, link);
+}
+
+struct weston_output *
+get_focused_output(struct weston_compositor *compositor)
+{
+	struct weston_seat *seat;
+	struct weston_output *output = NULL;
+
+	wl_list_for_each(seat, &compositor->seat_list, link) {
+		struct weston_touch *touch = weston_seat_get_touch(seat);
+		struct weston_pointer *pointer = weston_seat_get_pointer(seat);
+		struct weston_keyboard *keyboard =
+			weston_seat_get_keyboard(seat);
+
+		if (touch && touch->focus)
+			output = touch->focus->output;
+		else if (pointer && pointer->focus)
+			output = pointer->focus->output;
+		else if (keyboard && keyboard->focus)
+			output = keyboard->focus->output;
+
+		if (output)
+			break;
+	}
+
+	return output;
+}
+
+
 static void
 desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 {
@@ -74,6 +112,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	struct wl_client *client;
 	struct ivi_surface *surface;
 	struct ivi_output *active_output = NULL;
+	struct weston_output *output = NULL;
 	const char *app_id = NULL;
 
 	dclient = weston_desktop_surface_get_client(dsurface);
@@ -123,6 +162,19 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	/* reset any caps to make sure we apply the new caps */
 	ivi_seat_reset_caps_sent(ivi);
 
+	output =  get_focused_output(ivi->compositor);
+	if (!output)
+		output = get_default_output(ivi->compositor);
+
+	if (output && ivi->shell_client.ready) {
+		struct ivi_output *ivi_output = to_ivi_output(output);
+
+		weston_log("Setting surface to initial size of surface to %dx%d\n",
+				ivi_output->area.width, ivi_output->area.height);
+		weston_desktop_surface_set_maximized(dsurface, true);
+		weston_desktop_surface_set_size(dsurface,
+				ivi_output->area.width, ivi_output->area.height);
+	}
 	/*
 	 * We delay creating "normal" desktop surfaces until later, to
 	 * give the shell-client an oppurtunity to set the surface as a
