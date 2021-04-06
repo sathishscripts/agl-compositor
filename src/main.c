@@ -1500,15 +1500,15 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	log_ctx = weston_log_ctx_compositor_create();
+	log_ctx = weston_log_ctx_create();
 	if (!log_ctx) {
 		fprintf(stderr, "Failed to initialize weston debug framework.\n");
 		return ret;
 	}
 
-        log_scope = weston_compositor_add_log_scope(log_ctx, "log",
-						    "agl-compositor log\n",
-						    NULL, NULL, NULL);
+        log_scope = weston_log_ctx_add_log_scope(log_ctx, "log",
+						 "agl-compositor log\n",
+						  NULL, NULL, NULL);
 
 	log_file_open(log);
 	weston_log_set_handler(vlog, vlog_continue);
@@ -1609,15 +1609,13 @@ int main(int argc, char *argv[])
 	wl_display_destroy_clients(display);
 
 error_compositor:
-	weston_compositor_tear_down(ivi.compositor);
-
-	weston_compositor_log_scope_destroy(log_scope);
-	log_scope = NULL;
-
-	weston_log_ctx_compositor_destroy(ivi.compositor);
 	weston_compositor_destroy(ivi.compositor);
 
-	weston_log_subscriber_destroy_log(logger);
+	weston_log_scope_destroy(log_scope);
+	log_scope = NULL;
+
+	weston_log_subscriber_destroy(logger);
+	weston_log_ctx_destroy(log_ctx);
 
 	ivi_policy_destroy(ivi.policy);
 
