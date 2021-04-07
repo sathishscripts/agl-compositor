@@ -504,9 +504,7 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	switch (surface->role) {
 	case IVI_SURFACE_ROLE_SPLIT_V:
-		if (geom.width == woutput->width &&
-		    geom.height == woutput->height)
-			geom.width = (output->area.width / 2);
+		geom.width = (output->area.width / 2);
 
 		x += woutput->width - geom.width;
 		output->area.width -= geom.width;
@@ -517,9 +515,7 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 		break;
 	case IVI_SURFACE_ROLE_SPLIT_H:
-		if (geom.width == woutput->width &&
-		    geom.height == woutput->height)
-			geom.height = (output->area.height / 2);
+		geom.height = (output->area.height / 2);
 
 		y = output->area.y;
 		output->area.y += geom.height;
