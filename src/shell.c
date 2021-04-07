@@ -711,7 +711,7 @@ remove_black_surface(struct ivi_output *output)
 	weston_layer_entry_remove(&view->layer_link);
 	weston_view_update_transform(view);
 
-	weston_output_damage(output->output);
+	weston_view_damage_below(view);
 }
 
 void
@@ -738,7 +738,7 @@ insert_black_surface(struct ivi_output *output)
 	view->surface->is_mapped = true;
 
 	weston_view_update_transform(view);
-	weston_output_damage(output->output);
+	weston_view_damage_below(view);
 }
 
 static void

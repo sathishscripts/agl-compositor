@@ -218,7 +218,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	weston_view_update_transform(view);
 
 	/* force repaint of the entire output */
-	weston_output_damage(output->output);
+	weston_view_damage_below(view);
 
 	/*
 	 * the 'remote' role now makes use of this part so make sure we don't
@@ -741,7 +741,6 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 
 		weston_log("Placed app_id %s, type %s in hidden layer\n",
 				app_id, ivi_layout_get_surface_role_name(surf));
-		weston_output_damage(output->output);
 	}
 }
 
@@ -838,7 +837,7 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 				view->surface->is_mapped = false;
 
 				weston_layer_entry_remove(&view->layer_link);
-				weston_output_damage(ivi_output->output);
+				weston_view_damage_below(view);
 				ivi_output->active = NULL;
 			}
 		} else {
