@@ -1,6 +1,6 @@
 project('agl-compositor',
   'c','cpp',
-  version: '0.0.18',
+  version: '0.0.19',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
@@ -10,7 +10,7 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
-agl_compositor_version = '0.0.18'
+agl_compositor_version = '0.0.19'
 libweston_version = 'libweston-8'
 pkgconfig = import('pkgconfig')
 
