@@ -39,6 +39,7 @@
 
 #include <libweston/backend-drm.h>
 #include <libweston/backend-wayland.h>
+#include <libweston/backend-headless.h>
 #ifdef HAVE_BACKEND_X11
 #include <libweston/backend-x11.h>
 #endif
@@ -283,6 +284,7 @@ windowed_configure_output(struct ivi_output *output)
 	if (ivi->cmdline.scale)
 		weston_output_set_scale(output->output, ivi->cmdline.scale);
 
+	weston_log("windowed_configure_output() to width %d x height %d\n", width, height);
 	if (ivi->window_api->output_set_size(output->output, width, height) < 0) {
 		weston_log("Cannot configure output '%s' using weston_windowed_output_api.\n",
 			   output->name);
@@ -1085,6 +1087,55 @@ load_x11_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 #endif
 
 static int
+load_headless_backend(struct ivi_compositor *ivi, int *argc, char **argv)
+{
+	struct weston_headless_backend_config config = {{ 0, }};
+	int ret = 0;
+
+	bool use_pixman;
+	bool fullscreen;
+	bool use_gl;
+	int output_count;
+
+	struct weston_compositor *c = ivi->compositor;
+
+	const struct weston_option options[] = {
+		{ WESTON_OPTION_BOOLEAN, "use-pixman", 0, &use_pixman },
+		{ WESTON_OPTION_BOOLEAN, "use-gl", 0, &use_gl },
+	};
+
+	windowed_parse_common_options(ivi, argc, argv, &use_pixman,
+				      &fullscreen, &output_count);
+
+	parse_options(options, ARRAY_LENGTH(options), argc, argv);
+	config.use_pixman = use_pixman;
+	config.use_gl = use_gl;
+
+	config.base.struct_version = WESTON_HEADLESS_BACKEND_CONFIG_VERSION;
+	config.base.struct_size = sizeof(struct weston_headless_backend_config);
+
+	/* load the actual wayland backend and configure it */
+	ret = weston_compositor_load_backend(c, WESTON_BACKEND_HEADLESS,
+					     &config.base);
+
+	if (ret < 0)
+		return ret;
+
+	ivi->window_api = weston_windowed_output_get_api(c);
+	if (!ivi->window_api) {
+		weston_log("Cannot use weston_windowed_output_api.\n");
+		return -1;
+	}
+
+	if (ivi->window_api->create_head(c, "headless") < 0) {
+		weston_log("Cannot create headless back-end\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int
 load_backend(struct ivi_compositor *ivi, const char *backend,
 	     int *argc, char *argv[])
 {
@@ -1094,6 +1145,8 @@ load_backend(struct ivi_compositor *ivi, const char *backend,
 		return load_wayland_backend(ivi, argc, argv);
 	} else if (strcmp(backend, "x11-backend.so") == 0) {
 		return load_x11_backend(ivi, argc, argv);
+	} else if (strcmp(backend, "headless-backend.so") == 0) {
+		return load_headless_backend(ivi, argc, argv);
 	}
 
 	weston_log("fatal: unknown backend '%s'.\n", backend);
@@ -1437,6 +1490,7 @@ usage(int error_code)
 			"\t\t\t\tdrm-backend.so\n"
 			"\t\t\t\twayland-backend.so\n"
 			"\t\t\t\tx11-backend.so\n"
+			"\t\t\t\theadless-backend.so\n"
 		"  -S, --socket=NAME\tName of socket to listen on\n"
 		"  --log=FILE\t\tLog to the given file\n"
 		"  -c, --config=FILE\tConfig file to load, defaults to agl-compositor.ini\n"
