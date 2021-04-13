@@ -133,7 +133,7 @@ static const struct ivi_policy_api policy_api = {
 	.policy_rule_try_event = ivi_policy_default_try_event,
 };
 
-int
+WL_EXPORT int
 ivi_policy_init(struct ivi_compositor *ivi)
 {
 	ivi->policy = ivi_policy_create(ivi, &policy_api, ivi);

@@ -13,12 +13,14 @@ config_h = configuration_data()
 agl_compositor_version = '0.0.19'
 libweston_version = 'libweston-9'
 pkgconfig = import('pkgconfig')
+env_modmap = ''
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
 
 add_project_arguments(
   cc.get_supported_arguments([
+    '-Wno-missing-field-initializers',
     '-Wno-unused-parameter',
     '-Wno-pedantic',
     '-Wextra',
@@ -93,7 +95,9 @@ protocols = [
   { 'name': 'agl-shell', 'source': 'internal' },
   { 'name': 'agl-shell-desktop', 'source': 'internal' },
   { 'name': 'agl-screenshooter', 'source': 'internal' },
+  { 'name': 'weston-test', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
+  { 'name': 'viewporter', 'source': 'wp-stable' },
   { 'name': 'xdg-output', 'source': 'unstable', 'version': 'v1' },
 ]
 
@@ -159,7 +163,7 @@ deps_libweston = [
 ]
 
 srcs_agl_compositor = [
-	'src/main.c',
+	'src/compositor.c',
 	'src/desktop.c',
 	'src/layout.c',
 	'src/policy.c',
@@ -176,6 +180,7 @@ srcs_agl_compositor = [
 	agl_screenshooter_protocol_c,
 	xdg_shell_protocol_c,
 ]
+
 
 policy_to_install = get_option('policy-default')
 if policy_to_install == 'auto' or policy_to_install == 'allow-all'
@@ -215,7 +220,6 @@ endif
 
 if dep_libsystemd.found()
   config_h.set('HAVE_SYSTEMD', 1)
-
   srcs_agl_compositor += 'src/systemd-notify.c'
   deps_libweston += dep_libsystemd
 
@@ -239,10 +243,26 @@ endif
 
 configure_file(output: 'config.h', configuration: config_h)
 
+libexec_compositor = shared_library(
+        'exec_compositor',
+        sources: srcs_agl_compositor,
+        dependencies: deps_libweston,
+#install_dir: dir_module_weston,
+        install: true,
+        version: '0.0.0',
+        soversion: 0
+)
+
+dep_libexec_compositor = declare_dependency(
+        link_with: libexec_compositor,
+        include_directories: [ include_directories('.') ],
+        dependencies: deps_libweston,
+)
+
 exe_agl_compositor = executable(
 	'agl-compositor',
-	srcs_agl_compositor,
-	dependencies: deps_libweston,
+	'src/main.c',
+	dependencies: dep_libexec_compositor,
 	install: true
 )
 
@@ -265,3 +285,4 @@ install_data(
 
 common_inc = [ include_directories('src'), include_directories('.') ]
 subdir('clients')
+subdir('tests')
