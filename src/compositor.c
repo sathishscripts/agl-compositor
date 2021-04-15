@@ -1501,6 +1501,48 @@ usage(int error_code)
 	exit(error_code);
 }
 
+static int
+load_modules(struct ivi_compositor *ivi, const char *modules,
+	     int *argc, char *argv[], bool *xwayland)
+{
+	const char *p, *end;
+	char buffer[256];
+	int (*module_init)(struct weston_compositor *wc, int argc, char *argv[]);
+
+	if (modules == NULL)
+		return 0;
+
+	p = modules;
+	while (*p) {
+		end = strchrnul(p, ',');
+		snprintf(buffer, sizeof buffer, "%.*s", (int) (end - p), p);
+
+		if (strstr(buffer, "xwayland.so")) {
+			weston_log("Avoid loading Xwayland plug-in\n");
+
+			p = end;
+			while (*p == ',')
+				p++;
+			continue;
+		}
+
+		module_init = weston_load_module(buffer, "wet_module_init");
+		if (!module_init)
+			return -1;
+
+		if (module_init(ivi->compositor, *argc, argv) < 0)
+			return -1;
+
+		weston_log("Loaded plugin: '%s'\n", buffer);
+		p = end;
+		while (*p == ',')
+			p++;
+	}
+
+	return 0;
+}
+
+
 WL_EXPORT
 int wet_main(int argc, char *argv[])
 {
@@ -1513,6 +1555,8 @@ int wet_main(int argc, char *argv[])
 	char *backend = NULL;
 	char *socket_name = NULL;
 	char *log = NULL;
+	char *modules = NULL;
+	char *option_modules = NULL;
 	int help = 0;
 	int version = 0;
 	int no_config = 0;
@@ -1521,6 +1565,7 @@ int wet_main(int argc, char *argv[])
 	struct weston_log_context *log_ctx = NULL;
 	struct weston_log_subscriber *logger;
 	int ret = EXIT_FAILURE;
+	bool xwayland = false;
 
 	const struct weston_option core_options[] = {
 		{ WESTON_OPTION_STRING, "backend", 'B', &backend },
@@ -1531,6 +1576,7 @@ int wet_main(int argc, char *argv[])
 		{ WESTON_OPTION_BOOLEAN, "no-config", 0, &no_config },
 		{ WESTON_OPTION_BOOLEAN, "debug", 0, &debug },
 		{ WESTON_OPTION_STRING, "config", 'c', &config_file },
+		{ WESTON_OPTION_STRING, "modules", 0, &option_modules },
 	};
 
 	wl_list_init(&ivi.outputs);
@@ -1544,6 +1590,11 @@ int wet_main(int argc, char *argv[])
 
 	/* Prevent any clients we spawn getting our stdin */
 	os_fd_set_cloexec(STDIN_FILENO);
+
+	fprintf(stdout, "Running with args: ");
+	for (int i = 0; i < argc; i++)
+		fprintf(stdout, "%s ", argv[i]);
+	fprintf(stdout, "\n");
 
 	parse_options(core_options, ARRAY_LENGTH(core_options), &argc, argv);
 
@@ -1625,6 +1676,14 @@ int wet_main(int argc, char *argv[])
 		goto error_compositor;
 
 	ivi_seat_init(&ivi);
+
+	/* load additional modules */
+	weston_config_section_get_string(section, "modules", &modules, "");
+	if (load_modules(&ivi, modules, &argc, argv, &xwayland) < 0)
+		goto error_compositor;
+
+	if (load_modules(&ivi, option_modules, &argc, argv, &xwayland) < 0)
+		goto error_compositor;
 
 	if (ivi_policy_init(&ivi) < 0)
 		goto error_compositor;
