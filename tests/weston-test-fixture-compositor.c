@@ -227,6 +227,7 @@ renderer_to_arg(enum weston_compositor_backend b, enum renderer_type r)
 	return NULL;
 }
 
+#if 0
 static const char *
 shell_to_str(enum shell_type t)
 {
@@ -239,6 +240,7 @@ shell_to_str(enum shell_type t)
 	assert(t >= 0 && t < ARRAY_LENGTH(names));
 	return names[t];
 }
+#endif
 
 static const char *
 transform_to_str(enum wl_output_transform t)
@@ -400,9 +402,10 @@ execute_compositor(const struct compositor_setup *setup,
 	ctmp = renderer_to_arg(setup->backend, setup->renderer);
 	if (ctmp)
 		prog_args_take(&args, strdup(ctmp));
-
+#if 0
 	asprintf(&tmp, "--shell=%s", shell_to_str(setup->shell));
 	prog_args_take(&args, tmp);
+#endif
 
 	if (setup->logging_scopes) {
 		asprintf(&tmp, "--logger-scopes=%s", setup->logging_scopes);
