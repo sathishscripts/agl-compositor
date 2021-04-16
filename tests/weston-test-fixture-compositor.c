@@ -170,6 +170,7 @@ compositor_setup_defaults_(struct compositor_setup *setup,
 			   const char *testset_name)
 {
 	*setup = (struct compositor_setup) {
+		.test_quirks = (struct weston_testsuite_quirks) { },
 		.backend = WESTON_BACKEND_HEADLESS,
 		.renderer = RENDERER_NOOP,
 		.shell = SHELL_DESKTOP,
@@ -277,6 +278,7 @@ execute_compositor(const struct compositor_setup *setup,
 	char *tmp;
 	const char *ctmp, *drm_device;
 	int ret, lock_fd = -1;
+	struct weston_testsuite_data test_data;
 
 	if (setenv("WESTON_MODULE_MAP", WESTON_MODULE_MAP, 0) < 0 ||
 	    setenv("WESTON_DATA_DIR", WESTON_DATA_DIR, 0) < 0) {
@@ -415,9 +417,11 @@ execute_compositor(const struct compositor_setup *setup,
 	if (setup->xwayland)
 		prog_args_take(&args, strdup("--xwayland"));
 
-	wet_testsuite_data_set(data);
+	test_data.test_quirks = setup->test_quirks;
+	test_data.test_private_data = data;
+
 	prog_args_save(&args);
-	ret = wet_main(args.argc, args.argv);
+	ret = wet_main(args.argc, args.argv, &test_data);
 
 	prog_args_fini(&args);
 

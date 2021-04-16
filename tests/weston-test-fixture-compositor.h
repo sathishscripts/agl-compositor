@@ -71,6 +71,7 @@ enum shell_type {
  * \ingroup testharness
  */
 struct compositor_setup {
+	struct weston_testsuite_quirks test_quirks;
 	/** The backend to use. */
 	enum weston_compositor_backend backend;
 	/** The renderer to use. */

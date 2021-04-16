@@ -21,7 +21,6 @@ lib_test_client = static_library(
 	[
 		'weston-test-client-helper.c',
 		'weston-test-fixture-compositor.c',
-		'testsuite-util.c',
 		'../shared/os-compatibility.c',
 		'../shared/xalloc.c',
 		weston_test_client_protocol_h,

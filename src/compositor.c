@@ -1544,7 +1544,7 @@ load_modules(struct ivi_compositor *ivi, const char *modules,
 
 
 WL_EXPORT
-int wet_main(int argc, char *argv[])
+int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_data)
 {
 	struct ivi_compositor ivi = { 0 };
 	struct wl_display *display = NULL;
@@ -1654,7 +1654,7 @@ int wet_main(int argc, char *argv[])
 		if (!signals[i])
 			goto error_signals;
 
-	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi);
+	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi, test_data);
 	if (!ivi.compositor) {
 		weston_log("fatal: failed to create compositor.\n");
 		goto error_signals;
@@ -1716,6 +1716,7 @@ int wet_main(int argc, char *argv[])
 		ivi_screenshooter_create(&ivi);
 	ivi_agl_systemd_notify(&ivi);
 
+	weston_log("Compositor is running\n");
 	wl_display_run(display);
 
 	ret = ivi.compositor->exit_code;
