@@ -27,6 +27,10 @@ lib_test_client = static_library(
 		weston_test_protocol_c,
 		viewporter_client_protocol_h,
 		viewporter_protocol_c,
+		agl_shell_client_protocol_h,
+		agl_shell_protocol_c,
+		xdg_shell_client_protocol_h,
+		xdg_shell_protocol_c,
 	],
 	include_directories: common_inc,
 	dependencies: [
@@ -52,7 +56,7 @@ dep_test_client = declare_dependency(
 )
 
 tests = [
-	{ 'name': 'agl-shell', },
+	{ 'name': 'agl-shell', }
 ]
 
 test_config_h = configuration_data()
