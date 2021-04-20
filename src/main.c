@@ -1520,8 +1520,9 @@ usage(int error_code)
 		"Usage: agl-compositor [OPTIONS]\n"
 		"\n"
 		"This is " PACKAGE_STRING ", the reference compositor for\n"
-		"Automotive Grade Linux. Weston-ivi supports multiple backends, and depending\n"
-		"on which backend is in use different options will be accepted.\n"
+		"Automotive Grade Linux. " PACKAGE_STRING " supports multiple "
+		"backends,\nand depending on which backend is in use different "
+		"options will be accepted.\n"
 		"\n"
 		"Core options:\n"
 		"\n"
@@ -1541,9 +1542,30 @@ usage(int error_code)
 	exit(error_code);
 }
 
+static char *
+copy_command_line(int argc, char * const argv[])
+{
+	FILE *fp;
+	char *str = NULL;
+	size_t size = 0;
+	int i;
+
+	fp = open_memstream(&str, &size);
+	if (!fp)
+		return NULL;
+
+	fprintf(fp, "%s", argv[0]);
+	for (i = 1; i < argc; i++)
+		fprintf(fp, " %s", argv[i]);
+	fclose(fp);
+
+	return str;
+}
+
 int main(int argc, char *argv[])
 {
 	struct ivi_compositor ivi = { 0 };
+	char *cmdline;
 	struct wl_display *display = NULL;
 	struct wl_event_loop *loop;
 	struct wl_event_source *signals[3] = { 0 };
@@ -1588,6 +1610,7 @@ int main(int argc, char *argv[])
 	/* Prevent any clients we spawn getting our stdin */
 	os_fd_set_cloexec(STDIN_FILENO);
 
+	cmdline = copy_command_line(argc, argv);
 	parse_options(core_options, ARRAY_LENGTH(core_options), &argc, argv);
 
 	if (help)
@@ -1613,6 +1636,9 @@ int main(int argc, char *argv[])
 
 	logger = weston_log_subscriber_create_log(logfile);
 	weston_log_subscribe(log_ctx, logger, "log");
+
+	weston_log("Command line: %s\n", cmdline);
+	free(cmdline);
 
 	if (load_config(&ivi.config, no_config, config_file) < 0)
 		goto error_signals;
