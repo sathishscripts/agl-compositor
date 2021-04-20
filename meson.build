@@ -158,8 +158,9 @@ deps_libweston = [
   local_dep,
 ]
 
+
 srcs_agl_compositor = [
-	'src/main.c',
+	'src/compositor.c',
 	'src/desktop.c',
 	'src/layout.c',
 	'src/policy.c',
@@ -189,7 +190,6 @@ elif policy_to_install == 'rba'
   deps_libweston += dependency('librba')
   message('Installing rba policy')
 endif
-
 
 # From meson documentation:
 # In order to look for headers in a specific directory you can use args :
@@ -237,12 +237,28 @@ if dep_libsmack.found()
   deps_libweston += dep_libsmack
 endif
 
+
+libexec_compositor = shared_library(
+        'exec_compositor',
+        sources: srcs_agl_compositor,
+        dependencies: deps_libweston,
+        install: true,
+        version: '0.0.0',
+        soversion: 0
+)
+
+dep_libexec_compositor = declare_dependency(
+        link_with: libexec_compositor,
+        include_directories: [ include_directories('.') ],
+        dependencies: deps_libweston,
+)
+
 configure_file(output: 'config.h', configuration: config_h)
 
 exe_agl_compositor = executable(
 	'agl-compositor',
-	srcs_agl_compositor,
-	dependencies: deps_libweston,
+	'src/main.c',
+	dependencies: dep_libexec_compositor,
 	install: true
 )
 
