@@ -299,14 +299,14 @@ static int
 parse_transform(const char *transform, uint32_t *out)
 {
 	static const struct { const char *name; uint32_t token; } transforms[] = {
-		{ "normal",     WL_OUTPUT_TRANSFORM_NORMAL },
-		{ "90",         WL_OUTPUT_TRANSFORM_90 },
-		{ "180",        WL_OUTPUT_TRANSFORM_180 },
-		{ "270",        WL_OUTPUT_TRANSFORM_270 },
-		{ "flipped",    WL_OUTPUT_TRANSFORM_FLIPPED },
-		{ "flipped-90", WL_OUTPUT_TRANSFORM_FLIPPED_90 },
-		{ "flipped-180", WL_OUTPUT_TRANSFORM_FLIPPED_180 },
-		{ "flipped-270", WL_OUTPUT_TRANSFORM_FLIPPED_270 },
+		{ "normal",             WL_OUTPUT_TRANSFORM_NORMAL },
+		{ "rotate-90",          WL_OUTPUT_TRANSFORM_90 },
+		{ "rotate-180",         WL_OUTPUT_TRANSFORM_180 },
+		{ "rotate-270",         WL_OUTPUT_TRANSFORM_270 },
+		{ "flipped",            WL_OUTPUT_TRANSFORM_FLIPPED },
+		{ "flipped-rotate-90",  WL_OUTPUT_TRANSFORM_FLIPPED_90 },
+		{ "flipped-rotate-180", WL_OUTPUT_TRANSFORM_FLIPPED_180 },
+		{ "flipped-rotate-270", WL_OUTPUT_TRANSFORM_FLIPPED_270 },
 	};
 
 	for (size_t i = 0; i < ARRAY_LENGTH(transforms); i++)
@@ -1563,7 +1563,7 @@ copy_command_line(int argc, char * const argv[])
 }
 
 WL_EXPORT
-int wet_main(int argc, char *argv[])
+int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_data)
 {
 	struct ivi_compositor ivi = { 0 };
 	char *cmdline;
@@ -1622,15 +1622,15 @@ int wet_main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	log_ctx = weston_log_ctx_compositor_create();
+	log_ctx = weston_log_ctx_create();
 	if (!log_ctx) {
 		fprintf(stderr, "Failed to initialize weston debug framework.\n");
 		return ret;
 	}
 
-        log_scope = weston_compositor_add_log_scope(log_ctx, "log",
-						    "agl-compositor log\n",
-						    NULL, NULL, NULL);
+        log_scope = weston_log_ctx_add_log_scope(log_ctx, "log",
+						 "agl-compositor log\n",
+						  NULL, NULL, NULL);
 
 	log_file_open(log);
 	weston_log_set_handler(vlog, vlog_continue);
@@ -1673,7 +1673,7 @@ int wet_main(int argc, char *argv[])
 		if (!signals[i])
 			goto error_signals;
 
-	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi);
+	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi, test_data);
 	if (!ivi.compositor) {
 		weston_log("fatal: failed to create compositor.\n");
 		goto error_signals;
@@ -1742,15 +1742,12 @@ int wet_main(int argc, char *argv[])
 	wl_display_destroy_clients(display);
 
 error_compositor:
-	weston_compositor_tear_down(ivi.compositor);
-
-	weston_compositor_log_scope_destroy(log_scope);
+	weston_compositor_destroy(ivi.compositor);
+	weston_log_scope_destroy(log_scope);
 	log_scope = NULL;
 
-	weston_log_ctx_compositor_destroy(ivi.compositor);
-	weston_compositor_destroy(ivi.compositor);
-
-	weston_log_subscriber_destroy_log(logger);
+	weston_log_subscriber_destroy(logger);
+	weston_log_ctx_destroy(log_ctx);
 
 	ivi_policy_destroy(ivi.policy);
 
