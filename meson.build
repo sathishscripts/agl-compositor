@@ -19,6 +19,7 @@ cxx = meson.get_compiler('cpp')
 
 add_project_arguments(
   cc.get_supported_arguments([
+    '-Wno-missing-field-initializers',
     '-Wno-unused-parameter',
     '-Wno-pedantic',
     '-Wextra',
@@ -91,9 +92,11 @@ xdg_shell_xml = join_paths(dir_wp_base, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
 protocols = [
   { 'name': 'agl-shell', 'source': 'internal' },
+  { 'name': 'weston-test', 'source': 'internal' },
   { 'name': 'agl-shell-desktop', 'source': 'internal' },
   { 'name': 'agl-screenshooter', 'source': 'internal' },
   { 'name': 'xdg-shell', 'source': 'wp-stable' },
+  { 'name': 'viewporter', 'source': 'wp-stable' },
   { 'name': 'xdg-output', 'source': 'unstable', 'version': 'v1' },
 ]
 
@@ -281,3 +284,4 @@ install_data(
 
 common_inc = [ include_directories('src'), include_directories('.') ]
 subdir('clients')
+subdir('tests')
