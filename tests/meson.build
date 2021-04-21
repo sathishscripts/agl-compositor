@@ -56,6 +56,7 @@ dep_test_client = declare_dependency(
 )
 
 tests = [
+    { 'name': 'agl-client-shell' },
 ]
 
 env_modmap = ''
