@@ -34,7 +34,7 @@
 
 #include "shared/helpers.h"
 #include "weston-test-fixture-compositor.h"
-#include "weston.h"
+#include <weston/weston.h>
 #include "test-config.h"
 
 struct prog_args {
