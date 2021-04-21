@@ -281,3 +281,4 @@ install_data(
 
 common_inc = [ include_directories('src'), include_directories('.') ]
 subdir('clients')
+subdir('tests')
