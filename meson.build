@@ -237,11 +237,13 @@ if dep_libsmack.found()
   deps_libweston += dep_libsmack
 endif
 
+dir_module_agl_compositor = join_paths(join_paths(prefix_path, get_option('libdir')), 'agl-compositor')
 
 libexec_compositor = shared_library(
         'exec_compositor',
         sources: srcs_agl_compositor,
         dependencies: deps_libweston,
+        install_dir: dir_module_agl_compositor,
         install: true,
         version: '0.0.0',
         soversion: 0
@@ -259,6 +261,7 @@ exe_agl_compositor = executable(
 	'agl-compositor',
 	'src/main.c',
 	dependencies: dep_libexec_compositor,
+	install_rpath: dir_module_agl_compositor,
 	install: true
 )
 
