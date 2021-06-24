@@ -1177,6 +1177,14 @@ load_modules(struct ivi_compositor *ivi, const char *modules,
 			continue;
 		}
 
+		if (strstr(buffer, "systemd-notify.so")) {
+			weston_log("systemd-notify plug-in already loaded!\n");
+			p = end;
+			while (*p == ',')
+				p++;
+			continue;
+		}
+
 		module_init = weston_load_module(buffer, "wet_module_init");
 		if (!module_init)
 			return -1;
