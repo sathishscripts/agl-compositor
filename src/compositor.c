@@ -1248,7 +1248,7 @@ compositor_init_config(struct weston_compositor *compositor,
 				      &compositor->kb_repeat_delay, 400);
 
 	weston_config_section_get_bool(section, "vt-switching",
-				       &vt_switching, true);
+				       &vt_switching, false);
 	compositor->vt_switching = vt_switching;
 
 	/* agl-compositor.ini [core] */
