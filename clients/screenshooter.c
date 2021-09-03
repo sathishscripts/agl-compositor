@@ -395,28 +395,15 @@ screenshot_write_png(const struct buffer_size *buff_size,
 	free(data);
 }
 
-static int
+static void
 screenshot_set_buffer_size_per_output(struct buffer_size *buff_size,
 				      struct screenshooter_output *output)
 {
-	buff_size->min_x = buff_size->min_y = INT_MAX;
-	buff_size->max_x = buff_size->max_y = INT_MIN;
-
 	buff_size->min_x = MIN(buff_size->min_x, output->offset_x);
 	buff_size->min_y = MIN(buff_size->min_y, output->offset_y);
-	buff_size->max_x =
-		MAX(buff_size->max_x, output->offset_x + output->width);
-	buff_size->max_y =
-		MAX(buff_size->max_y, output->offset_y + output->height);
+	buff_size->max_x = MAX(buff_size->max_x, output->offset_x + output->width);
+	buff_size->max_y = MAX(buff_size->max_y, output->offset_y + output->height);
 
-	if (buff_size->max_x <= buff_size->min_x ||
-	    buff_size->max_y <= buff_size->min_y)
-		return -1;
-
-	buff_size->width = buff_size->max_x - buff_size->min_x;
-	buff_size->height = buff_size->max_y - buff_size->min_y;
-
-	return 0;
 }
 
 static void
@@ -432,12 +419,21 @@ screenshot_set_buffer_size(struct buffer_size *buff_size, struct wl_list *output
 	struct screenshooter_output *output;
 	int pos = 0;
 
+	buff_size->min_x = buff_size->min_y = INT_MAX;
+	buff_size->max_x = buff_size->max_y = INT_MIN;
+
 	wl_list_for_each_reverse(output, output_list, link)
 		screenshot_compute_output_offset(&pos, output);
 
 	wl_list_for_each(output, output_list, link)
-		if (screenshot_set_buffer_size_per_output(buff_size, output))
-			return -1;
+		screenshot_set_buffer_size_per_output(buff_size, output);
+
+	if (buff_size->max_x <= buff_size->min_x ||
+	    buff_size->max_y <= buff_size->min_y)
+		return -1;
+
+	buff_size->width = buff_size->max_x - buff_size->min_x;
+	buff_size->height = buff_size->max_y - buff_size->min_y;
 
 	return 0;
 }
