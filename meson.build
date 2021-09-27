@@ -203,17 +203,26 @@ if libweston_dep.found()
   if not meson.is_cross_build()
     if not prefix_path.contains('/usr')
       dir_path_x11_backend = join_paths(prefix_path, 'include', libweston_version, 'libweston', 'backend-x11.h')
+      dir_path_headless_backend = join_paths(prefix_path, 'include', libweston_version, 'libweston', 'backend-headless.h')
     else
       dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-x11.h')
+      dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-headless.h')
     endif
   else
     message('Building with cross environment')
     dir_path_x11_backend = join_paths(libweston_version, 'libweston', 'backend-x11.h')
+    dir_path_headless_backend = join_paths(libweston_version, 'libweston', 'backend-headless.h')
   endif
 
   # do the test
   if cc.has_header(dir_path_x11_backend)
     config_h.set('HAVE_BACKEND_X11', 1)
+    message('Building with X11 backend')
+  endif
+
+  if cc.has_header(dir_path_headless_backend)
+    config_h.set('HAVE_BACKEND_HEADLESS', 1)
+    message('Building with headless backend')
   endif
 endif
 

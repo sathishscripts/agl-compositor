@@ -39,7 +39,9 @@
 
 #include <libweston/backend-drm.h>
 #include <libweston/backend-wayland.h>
+#ifdef HAVE_BACKEND_HEADLESS
 #include <libweston/backend-headless.h>
+#endif
 #ifdef HAVE_BACKEND_X11
 #include <libweston/backend-x11.h>
 #endif
@@ -1087,6 +1089,7 @@ load_x11_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 }
 #endif
 
+#ifdef HAVE_BACKEND_HEADLESS
 static int
 load_headless_backend(struct ivi_compositor *ivi, int *argc, char **argv)
 {
@@ -1134,6 +1137,13 @@ load_headless_backend(struct ivi_compositor *ivi, int *argc, char **argv)
 
 	return 0;
 }
+#else
+static int
+load_headless_backend(struct ivi_compositor *ivi, int *argc, char **argv)
+{
+	return -1;
+}
+#endif
 
 static int
 load_backend(struct ivi_compositor *ivi, const char *backend,
