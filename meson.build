@@ -13,6 +13,7 @@ config_h = configuration_data()
 agl_compositor_version = '0.0.19'
 libweston_version = 'libweston-8'
 pkgconfig = import('pkgconfig')
+fs = import('fs')
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
@@ -134,14 +135,17 @@ foreach proto: protocols
     endforeach
 endforeach
 
-# libweston-6 pkg-config file already has 'libweston-6' as prefix but
-# agl-compositor uses 'libweston-6' also. This makes use of the prefix
-# path as to allow building and installing the compositor locally
+# libweston pkg-config file already has 'libweston' as prefix but
+# agl-compositor uses 'libweston' also. This makes use of the prefix path as to
+# allow building and installing the compositor locally
 prefix_path = get_option('prefix')
 message('prefix_path ' + prefix_path)
 if not prefix_path.contains('/usr')
-  additional_include_dir = include_directories(prefix_path + '/' + 'include')
-  local_dep = declare_dependency(include_directories: additional_include_dir)
+  include_dir_str = join_paths(prefix_path, 'include')
+  if not fs.is_dir(include_dir_str)
+    error('Prefix path does not contain an include directory!')
+  endif
+  local_dep = declare_dependency(include_directories: include_dir_str)
 else
   local_dep = []
 endif
