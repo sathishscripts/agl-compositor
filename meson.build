@@ -70,7 +70,7 @@ endforeach
 # for it so we add waltham depends here. Further more, the output is being
 # handled by remoting plug-in
 depnames_waltham = [
-  'waltham'
+  'waltham', 'waltham-transmitter',
 ]
 
 deps_waltham = []
