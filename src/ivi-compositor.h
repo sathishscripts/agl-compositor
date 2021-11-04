@@ -419,4 +419,8 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 					   struct ivi_surface *surface);
 void
 ivi_destroy_waltham_destroy(struct ivi_surface *surface);
+
+bool
+ivi_check_pending_surface(struct ivi_surface *surface);
+
 #endif

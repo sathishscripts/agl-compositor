@@ -169,11 +169,15 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	if (output && ivi->shell_client.ready) {
 		struct ivi_output *ivi_output = to_ivi_output(output);
 
-		weston_log("Setting surface to initial size of surface to %dx%d\n",
-				ivi_output->area.width, ivi_output->area.height);
-		weston_desktop_surface_set_maximized(dsurface, true);
-		weston_desktop_surface_set_size(dsurface,
-				ivi_output->area.width, ivi_output->area.height);
+		/* verify if by any chance this surfaces hasn't been assigned a
+		 * different role before sending the maximized state */
+		if (!ivi_check_pending_surface(surface)) {
+			weston_log("Setting surface to initial size of surface to %dx%d\n",
+					ivi_output->area.width, ivi_output->area.height);
+			weston_desktop_surface_set_maximized(dsurface, true);
+			weston_desktop_surface_set_size(dsurface,
+					ivi_output->area.width, ivi_output->area.height);
+		}
 	}
 	/*
 	 * We delay creating "normal" desktop surfaces until later, to

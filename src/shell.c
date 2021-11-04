@@ -458,6 +458,53 @@ ivi_check_pending_desktop_surface_remote(struct ivi_surface *surface)
 	return false;
 }
 
+bool
+ivi_check_pending_surface(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct wl_list *role_pending_list;
+	struct pending_popup *p_popup;
+	struct pending_split *p_split;
+	struct pending_fullscreen *p_fullscreen;
+	struct pending_remote *p_remote;
+	const char *app_id =
+		weston_desktop_surface_get_app_id(surface->dsurface);
+
+	if (!app_id)
+		return false;
+
+	role_pending_list = &ivi->popup_pending_apps;
+	wl_list_for_each(p_popup, role_pending_list, link) {
+		if (!strcmp(app_id, p_popup->app_id)) {
+			return true;
+		}
+	}
+
+	role_pending_list = &ivi->split_pending_apps;
+	wl_list_for_each(p_split, role_pending_list, link) {
+		if (!strcmp(app_id, p_split->app_id)) {
+			return true;
+		}
+	}
+
+	role_pending_list = &ivi->fullscreen_pending_apps;
+	wl_list_for_each(p_fullscreen, role_pending_list, link) {
+		if (!strcmp(app_id, p_fullscreen->app_id)) {
+			return true;
+		}
+	}
+
+	role_pending_list = &ivi->remote_pending_apps;
+	wl_list_for_each(p_remote, role_pending_list, link) {
+		if (!strcmp(app_id, p_remote->app_id)) {
+			return true;
+		}
+	}
+
+	/* else, we are a regular desktop surface */
+	return false;
+}
+
 
 void
 ivi_check_pending_desktop_surface(struct ivi_surface *surface)
