@@ -555,6 +555,15 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 			app_id, ivi_layout_get_surface_role_name(surface), output->name);
 }
 
+static void
+ivi_compute_popup_position(const struct weston_output *output, struct weston_view *view,
+			   int initial_x, int initial_y, int *new_x, int *new_y)
+{
+	*new_x = output->x + initial_x;
+	*new_y = output->y + initial_y;
+}
+
+
 void
 ivi_layout_popup_committed(struct ivi_surface *surface)
 {
@@ -565,6 +574,8 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 	const char *app_id = weston_desktop_surface_get_app_id(dsurface);
+
+	int new_x, new_y;
 
 	struct ivi_output *output = surface->popup.output;
 	struct weston_output *woutput = output->output;
@@ -582,7 +593,10 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
 
 	weston_view_set_output(view, woutput);
-	weston_view_set_position(view, surface->popup.x, surface->popup.y);
+
+	ivi_compute_popup_position(woutput, view,
+				   surface->popup.x, surface->popup.y, &new_x, &new_y);
+	weston_view_set_position(view, new_x, new_y);
 
 	/* only clip the pop-up dialog window if we have a valid
 	 * width and height being passed on. Users might not want to have one
