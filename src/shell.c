@@ -1068,7 +1068,7 @@ shell_desktop_set_app_property(struct wl_client *client,
 	}
 }
 
-static void
+void
 ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi)
 {
 	struct pending_popup *p_popup, *next_p_popup;

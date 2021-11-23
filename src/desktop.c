@@ -436,12 +436,26 @@ static const struct weston_desktop_api desktop_api = {
 	.set_xwayland_position = desktop_set_xwayland_position,
 };
 
+static void
+ivi_shell_destroy(struct wl_listener *listener, void *data)
+{
+	struct ivi_compositor *ivi = container_of(listener,
+				struct ivi_compositor, destroy_listener);
+
+	ivi_compositor_destroy_pending_surfaces(ivi);
+}
+
 int
 ivi_desktop_init(struct ivi_compositor *ivi)
 {
 	ivi->desktop = weston_desktop_create(ivi->compositor, &desktop_api, ivi);
 	if (!ivi->desktop) {
 		weston_log("Failed to create desktop globals");
+		return -1;
+	}
+
+	if (!weston_compositor_add_destroy_listener_once(ivi->compositor,
+			&ivi->destroy_listener, ivi_shell_destroy)) {
 		return -1;
 	}
 

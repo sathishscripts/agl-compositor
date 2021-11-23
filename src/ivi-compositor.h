@@ -98,6 +98,8 @@ struct ivi_compositor {
 	struct wl_list split_pending_apps;
 	struct wl_list remote_pending_apps;
 
+	struct wl_listener destroy_listener;
+
 	struct weston_layer hidden;
 	struct weston_layer background;
 	struct weston_layer normal;
@@ -423,5 +425,8 @@ ivi_destroy_waltham_destroy(struct ivi_surface *surface);
 
 bool
 ivi_check_pending_surface(struct ivi_surface *surface);
+
+void
+ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi);
 
 #endif
