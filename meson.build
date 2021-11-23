@@ -1,6 +1,6 @@
 project('agl-compositor',
   'c','cpp',
-  version: '0.0.19',
+  version: '0.0.20',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
@@ -10,7 +10,6 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
-agl_compositor_version = '0.0.19'
 libweston_version = 'libweston-8'
 pkgconfig = import('pkgconfig')
 fs = import('fs')
@@ -279,9 +278,9 @@ exe_agl_compositor = executable(
 )
 
 pkgconfig.generate(
-        filebase: 'agl-compositor-@0@-protocols'.format(agl_compositor_version),
+        filebase: 'agl-compositor-@0@-protocols'.format(meson.project_version()),
         name: 'agl-compositor private protocols',
-        version: agl_compositor_version,
+        version: meson.project_version(),
         description: 'agl-compositor protocol files',
         variables: [
                 'datarootdir=' + join_paths('${prefix}', get_option('datadir')),
