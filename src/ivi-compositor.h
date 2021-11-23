@@ -55,6 +55,7 @@ struct ivi_compositor {
 	bool init_failed;
 	bool hide_cursor;
 	bool activate_by_default;
+	bool keep_pending_surfaces;
 
 	/*
 	 * Options parsed from command line arugments.

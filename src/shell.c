@@ -358,6 +358,12 @@ ivi_remove_pending_desktop_surface_remote(struct pending_remote *remote)
 }
 
 static bool
+ivi_compositor_keep_pending_surfaces(struct ivi_surface *surface)
+{
+	return surface->ivi->keep_pending_surfaces;
+}
+
+static bool
 ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
@@ -380,7 +386,8 @@ ivi_check_pending_desktop_surface_popup(struct ivi_surface *surface)
 			surface->popup.bb.width = p_popup->bb.width;
 			surface->popup.bb.height = p_popup->bb.height;
 
-			ivi_remove_pending_desktop_surface_popup(p_popup);
+			if (!ivi_compositor_keep_pending_surfaces(surface))
+				ivi_remove_pending_desktop_surface_popup(p_popup);
 			return true;
 		}
 	}
@@ -404,7 +411,8 @@ ivi_check_pending_desktop_surface_split(struct ivi_surface *surface)
 		if (!strcmp(_app_id, split_surf->app_id)) {
 			surface->split.output = split_surf->ioutput;
 			surface->split.orientation = split_surf->orientation;
-			ivi_remove_pending_desktop_surface_split(split_surf);
+			if (!ivi_compositor_keep_pending_surfaces(surface))
+				ivi_remove_pending_desktop_surface_split(split_surf);
 			return true;
 		}
 	}
@@ -427,7 +435,8 @@ ivi_check_pending_desktop_surface_fullscreen(struct ivi_surface *surface)
 			      &ivi->fullscreen_pending_apps, link) {
 		if (!strcmp(_app_id, fs_surf->app_id)) {
 			surface->fullscreen.output = fs_surf->ioutput;
-			ivi_remove_pending_desktop_surface_fullscreen(fs_surf);
+			if (!ivi_compositor_keep_pending_surfaces(surface))
+				ivi_remove_pending_desktop_surface_fullscreen(fs_surf);
 			return true;
 		}
 	}
@@ -450,7 +459,8 @@ ivi_check_pending_desktop_surface_remote(struct ivi_surface *surface)
 			      &ivi->remote_pending_apps, link) {
 		if (!strcmp(_app_id, remote_surf->app_id)) {
 			surface->remote.output = remote_surf->ioutput;
-			ivi_remove_pending_desktop_surface_remote(remote_surf);
+			if (!ivi_compositor_keep_pending_surfaces(surface))
+				ivi_remove_pending_desktop_surface_remote(remote_surf);
 			return true;
 		}
 	}
@@ -1058,10 +1068,50 @@ shell_desktop_set_app_property(struct wl_client *client,
 	}
 }
 
+static void
+ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi)
+{
+	struct pending_popup *p_popup, *next_p_popup;
+	struct pending_split *split_surf, *next_split_surf;
+	struct pending_fullscreen *fs_surf, *next_fs_surf;
+	struct pending_remote *remote_surf, *next_remote_surf;
+
+	wl_list_for_each_safe(p_popup, next_p_popup,
+			      &ivi->popup_pending_apps, link)
+		ivi_remove_pending_desktop_surface_popup(p_popup);
+
+	wl_list_for_each_safe(split_surf, next_split_surf,
+			      &ivi->split_pending_apps, link)
+		ivi_remove_pending_desktop_surface_split(split_surf);
+
+	wl_list_for_each_safe(fs_surf, next_fs_surf,
+			      &ivi->fullscreen_pending_apps, link)
+		ivi_remove_pending_desktop_surface_fullscreen(fs_surf);
+
+	wl_list_for_each_safe(remote_surf, next_remote_surf,
+			      &ivi->remote_pending_apps, link)
+		ivi_remove_pending_desktop_surface_remote(remote_surf);
+}
+
+static void
+shell_desktop_set_app_property_mode(struct wl_client *client,
+				    struct wl_resource *shell_res, uint32_t perm)
+{
+	struct desktop_client *dclient = wl_resource_get_user_data(shell_res);
+	if (perm) {
+		dclient->ivi->keep_pending_surfaces = true;
+	} else {
+		dclient->ivi->keep_pending_surfaces = false;
+		/* remove any previous pending surfaces */
+		ivi_compositor_destroy_pending_surfaces(dclient->ivi);
+	}
+}
+
 static const struct agl_shell_desktop_interface agl_shell_desktop_implementation = {
 	.activate_app = shell_desktop_activate_app,
 	.set_app_property = shell_desktop_set_app_property,
 	.deactivate_app = shell_deactivate_app,
+	.set_app_property_mode = shell_desktop_set_app_property_mode,
 };
 
 static void
@@ -1211,7 +1261,7 @@ ivi_shell_create_global(struct ivi_compositor *ivi)
 	}
 
 	ivi->agl_shell_desktop = wl_global_create(ivi->compositor->wl_display,
-						  &agl_shell_desktop_interface, 1,
+						  &agl_shell_desktop_interface, 2,
 						  ivi, bind_agl_shell_desktop);
 	if (!ivi->agl_shell_desktop) {
 		weston_log("Failed to create wayland global (agl_shell_desktop).\n");
