@@ -236,15 +236,12 @@ ivi_set_desktop_surface_split(struct ivi_surface *surface)
 	agl_shell_desktop_advertise_application_id(ivi, surface);
 }
 
-static void
-ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
-				      int x, int y, int bx, int by, int width, int height,
-				      const char *app_id)
+static struct pending_popup *
+ivi_ensure_popup(struct ivi_output *ioutput, int x, int y, int bx, int by,
+		 int width, int height, const char *app_id)
 {
-	struct ivi_compositor *ivi = ioutput->ivi;
-	size_t len_app_id = strlen(app_id);
-
 	struct pending_popup *p_popup = zalloc(sizeof(*p_popup));
+	size_t len_app_id = strlen(app_id);
 
 	p_popup->app_id = zalloc(sizeof(char) * (len_app_id + 1));
 	memcpy(p_popup->app_id, app_id, len_app_id);
@@ -257,6 +254,113 @@ ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput,
 	p_popup->bb.width = width;
 	p_popup->bb.height = height;
 
+	return p_popup;
+}
+
+static void
+ivi_update_popup(struct ivi_output *ioutput, int x, int y, int bx, int by,
+		 int width, int height, const char *app_id, struct pending_popup *p_popup)
+{
+	size_t len_app_id = strlen(app_id);
+
+	wl_list_remove(&p_popup->link);
+	wl_list_init(&p_popup->link);
+
+	memset(p_popup->app_id, 0, strlen(app_id) + 1);
+	free(p_popup->app_id);
+
+	p_popup->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_popup->app_id, app_id, len_app_id);
+
+	p_popup->ioutput = ioutput;
+	p_popup->x = x;
+	p_popup->y = y;
+
+	p_popup->bb.x = bx;
+	p_popup->bb.y = by;
+	p_popup->bb.width = width;
+	p_popup->bb.height = height;
+}
+
+static struct pending_fullscreen *
+ivi_ensure_fullscreen(struct ivi_output *ioutput, const char *app_id)
+{
+	struct pending_fullscreen *p_fullscreen = zalloc(sizeof(*p_fullscreen));
+	size_t len_app_id = strlen(app_id);
+
+	p_fullscreen->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_fullscreen->app_id, app_id, len_app_id);
+
+	p_fullscreen->ioutput = ioutput;
+	return p_fullscreen;
+}
+
+static void
+ivi_update_fullscreen(struct ivi_output *ioutput, const char *app_id,
+		      struct pending_fullscreen *p_fullscreen)
+{
+	size_t len_app_id = strlen(app_id);
+
+	wl_list_remove(&p_fullscreen->link);
+	wl_list_init(&p_fullscreen->link);
+
+	memset(p_fullscreen->app_id, 0, strlen(app_id) + 1);
+	free(p_fullscreen->app_id);
+
+	p_fullscreen->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_fullscreen->app_id, app_id, len_app_id);
+
+	p_fullscreen->ioutput = ioutput;
+}
+
+static struct pending_remote *
+ivi_ensure_remote(struct ivi_output *ioutput, const char *app_id)
+{
+	struct pending_remote *p_remote = zalloc(sizeof(*p_remote));
+	size_t len_app_id = strlen(app_id);
+
+	p_remote->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_remote->app_id, app_id, len_app_id);
+
+	p_remote->ioutput = ioutput;
+	return p_remote;
+}
+
+static void
+ivi_update_remote(struct ivi_output *ioutput, const char *app_id,
+		      struct pending_remote *p_remote)
+{
+	size_t len_app_id = strlen(app_id);
+
+	wl_list_remove(&p_remote->link);
+	wl_list_init(&p_remote->link);
+
+	memset(p_remote->app_id, 0, strlen(app_id) + 1);
+	free(p_remote->app_id);
+
+	p_remote->app_id = zalloc(sizeof(char) * (len_app_id + 1));
+	memcpy(p_remote->app_id, app_id, len_app_id);
+
+	p_remote->ioutput = ioutput;
+}
+
+static void
+ivi_set_pending_desktop_surface_popup(struct ivi_output *ioutput, int x, int y, int bx,
+				      int by, int width, int height, const char *app_id)
+{
+	struct ivi_compositor *ivi = ioutput->ivi;
+	struct pending_popup *p_popup = NULL;
+	struct pending_popup *popup;
+
+	wl_list_for_each(popup, &ivi->popup_pending_apps, link)
+		if (!strcmp(app_id, popup->app_id))
+			p_popup = popup;
+
+	if (!p_popup)
+		p_popup = ivi_ensure_popup(ioutput, x, y, bx, by, width, height, app_id);
+	else
+		ivi_update_popup(ioutput, x, y, bx, by, width, height, app_id, p_popup);
+
 	wl_list_insert(&ivi->popup_pending_apps, &p_popup->link);
 }
 
@@ -265,16 +369,19 @@ ivi_set_pending_desktop_surface_fullscreen(struct ivi_output *ioutput,
 					   const char *app_id)
 {
 	struct ivi_compositor *ivi = ioutput->ivi;
-	size_t len_app_id = strlen(app_id);
+	struct pending_fullscreen *p_fullscreen = NULL;
+	struct pending_fullscreen *fullscreen;
 
-	struct pending_fullscreen *fs = zalloc(sizeof(*fs));
+	wl_list_for_each(fullscreen, &ivi->fullscreen_pending_apps, link)
+		if (!strcmp(app_id, fullscreen->app_id))
+			p_fullscreen = fullscreen;
 
-	fs->app_id = zalloc(sizeof(char) * (len_app_id + 1));
-	memcpy(fs->app_id, app_id, len_app_id);
+	if (!p_fullscreen)
+		p_fullscreen = ivi_ensure_fullscreen(ioutput, app_id);
+	else
+		ivi_update_fullscreen(ioutput, app_id, p_fullscreen);
 
-	fs->ioutput = ioutput;
-
-	wl_list_insert(&ivi->fullscreen_pending_apps, &fs->link);
+	wl_list_insert(&ivi->fullscreen_pending_apps, &p_fullscreen->link);
 }
 
 static void
@@ -312,14 +419,17 @@ ivi_set_pending_desktop_surface_remote(struct ivi_output *ioutput,
 		const char *app_id)
 {
 	struct ivi_compositor *ivi = ioutput->ivi;
-	size_t len_app_id = strlen(app_id);
+	struct pending_remote *remote;
+	struct pending_remote *p_remote = NULL;
 
-	struct pending_remote *remote = zalloc(sizeof(*remote));
+	wl_list_for_each(remote, &ivi->remote_pending_apps, link)
+		if (!strcmp(app_id, remote->app_id))
+			p_remote = remote;
 
-	remote->app_id = zalloc(sizeof(char) * (len_app_id + 1));
-	memcpy(remote->app_id, app_id, len_app_id);
-
-	remote->ioutput = ioutput;
+	if (!p_remote)
+		p_remote = ivi_ensure_remote(ioutput, app_id);
+	else
+		ivi_update_remote(ioutput, app_id, p_remote);
 
 	wl_list_insert(&ivi->remote_pending_apps, &remote->link);
 }
