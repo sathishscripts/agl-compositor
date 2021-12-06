@@ -74,8 +74,8 @@ further customize layer and orientation of surfaces.
 
 These have **no** particular meaning, except that it hints the compositor where
 they should be stacked or where to position them. The background one occupies
-the most lower layer, the desktop ones on top and the panel surfaces the upper
-most layer.
+the lowest layer, with the desktop role ones on top of it, and the panel role
+surfaces on the uppermost layer.
 
 Additional roles have been added, in a different extension, to add further
 functionality with the control/security functions being transferred over to a
@@ -86,8 +86,8 @@ further details.
 
 Clients can make use of this protocol to define different kind of roles for
 different kind of surfaces. This defines panels and a background surface.  It
-includes to ability to activate other applications, assuming that those are
-already running. Activation happens by using using the app_id, respectively
+includes the ability to activate other applications, assuming that those are
+already running. Activation happens by using the app_id, respectively
 using set_app_id request as defined by the XDG shell protocol. Established
 client-side implementation of the XDG shell protocol will have a function used
 to set it up, or it should provide or expose an API to do so.
@@ -99,7 +99,7 @@ for the client shell to activate them.
 
 This extension is targeted at keeping some of the functionally already
 established in AGL a) to allow applications display/activate other
-surfaces/application window, and b) to set further roles, specially dialog
+surfaces/application window, and b) to set further roles, such as dialog
 pop-ups and split-type of surfaces.
 
 Clients can make use of this protocol to set further roles, like independently
@@ -117,7 +117,7 @@ roles, and with this extension we add some further roles. These are: split
 these are encoded with different values such that there's a translation needed,
 between the protocol values and the internal values.
 
-Besides the roles, additional data can to be passed, but only relevant
+Besides the roles, additional data can be passed, but only relevant
 depending on the role.
 
 #### Receiving application state events from (other) applications
@@ -132,13 +132,13 @@ needed.
 
 Both agl-shell and agl-shell-desktop have requests to activate other
 application based on their XDG shell app_id. In case the application is
-present/running it it will attempt to make the surface backing that application
-the current activate one, with each output having independently active
+present/running, it will attempt to make the surface backing that application
+the current active one, with each output having independent active
 surfaces.
 
 ### Explicit output
 
-The activation and setting surface roles requires passing an output
+Activation and setting of surface roles requires passing an output
 (wl_output).  The output is the wayland interface representation of an output
 and is **mandatory**.  Clients can retrieve it (the output) if they wish to
 place the surface on other outputs by using the toolkits exposing wayland
@@ -152,7 +152,7 @@ Both protocols assume immediate, synchronous behaviour and to some extent lack
 some error handling functionality.
 
 Role assignment to surfaces could probably be improved with an additional
-interface with can add further data, if that roles assumes that to be true.
+interface that could add further data, if a role requires it.
 
 There seems to be some overlapping functionality with respect to activating
 applications, so a potential improvement would be that the agl-shell protocol
@@ -174,12 +174,12 @@ issue:
 
 	$ meson -Dprefix=/path/to/where/to/install/compositor -Dpolicy-default=deny-all build_directory
 
-Users wanting  to create their own policy engine should create a specialized
+Users wanting to create their own policy engine should create a specialized
 version and use `struct ivi_policy_api` where they can install their own
 callbacks.
 
 The default policy found in src/policy-default.c should more than sufficient to
-get started. Users can either re-puporse the default policy or create a new one
+get started. Users can either re-purpose the default policy or create a new one
 entirely different, based on their needs.
 
 ### Hooks
@@ -209,8 +209,8 @@ or hiding the application specified in the policy rule.
 
 #### Default events and states
 
-By default the when creating the policy framework it will add the 'show', and
-'hide' events and the 'start', 'stop' and 'reverse' states. An special type,
+By default, when creating the policy framework it will add the 'show', and
+'hide' events and the 'start', 'stop' and 'reverse' states. A special type,
 assigned by default is 'invalid'.
 
 #### State changes
