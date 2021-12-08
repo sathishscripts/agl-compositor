@@ -216,6 +216,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 	weston_view_update_transform(view);
+	weston_view_geometry_dirty(view);
 
 	weston_view_damage_below(view);
 
