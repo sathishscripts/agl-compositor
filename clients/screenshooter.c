@@ -201,6 +201,8 @@ add_xdg_output_v1_info(struct screenshooter_data *shooter_data,
                        struct screenshooter_output *output)
 {
 	struct xdg_output_v1_info *xdg_output = zalloc(sizeof(*xdg_output));
+	if (!xdg_output)
+		return;
 
 	wl_list_insert(&shooter_data->xdg_output_list, &xdg_output->link);
 
