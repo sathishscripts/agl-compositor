@@ -215,10 +215,9 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	output->active = surf;
 
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
-	weston_view_update_transform(view);
-	weston_view_geometry_dirty(view);
 
-	weston_view_damage_below(view);
+	weston_view_geometry_dirty(view);
+	weston_view_schedule_repaint(view);
 
 	/*
 	 * the 'remote' role now makes use of this part so make sure we don't
