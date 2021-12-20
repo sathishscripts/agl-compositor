@@ -68,7 +68,7 @@
 
     <event name="done">
       <description summary="sent when 'take_shot' finished">
-         Even sent back to nofify client 'take_shot' request has completed.
+         Even sent back to notify client 'take_shot' request has completed.
       </description>
       <arg name="status" type="uint" enum="done_status" />
     </event>

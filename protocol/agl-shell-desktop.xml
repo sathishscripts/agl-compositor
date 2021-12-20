@@ -26,7 +26,7 @@
     <description summary="Private extension to allow applications activate other apps">
       This extension can be used by regular application to instruct to compositor
       to activate or switch to other running (regular) applications. The client
-      is responsbile for filtering their own app_id when receiving application id.
+      is responsible for filtering their own app_id when receiving application id.
 
       The compositor will allow clients to bind to this interface only if the
       policy engine allows it.
@@ -118,7 +118,7 @@
         Ask the compositor to hide the toplevel window for window
         management purposes. Depending on the window role, this request
         will either display the previously active window (or the background
-        in case there's no previously activate surface) or temporarly (or
+        in case there's no previously active surface) or temporarily (or
         until a 'activate_app' is called upon) hide the surface. All
         the surfaces are identifiable by using the app_id, and no actions are
         taken in case the app_id is not/was not present.

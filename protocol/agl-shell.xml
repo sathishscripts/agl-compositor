@@ -44,7 +44,7 @@
         Tell the server that this client is ready to be shown. The server
         will delay presentation during start-up until all shell clients are
         ready to be shown, and will display a black screen instead.
-        This gives the client an oppurtunity to set up and configure several
+        This gives the client an opportunity to set up and configure several
         surfaces into a coherent interface.
 
         The client that binds to this interface must send this request, otherwise
@@ -76,7 +76,7 @@
         Set the surface to act as a panel of an output. The 'edge' argument
         says what edge of the output the surface will be anchored to.
         After this request, the server will send a configure event with the
-        correponding width/height that the client should use, and 0 for the
+        corresponding width/height that the client should use, and 0 for the
         other dimension. E.g. if the edge is 'top', the width will be the
         output's width, and the height will be 0.
 
