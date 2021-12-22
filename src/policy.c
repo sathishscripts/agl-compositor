@@ -54,8 +54,14 @@ ivi_policy_state_event_create(uint32_t val, const char *value)
 	struct state_event *ev_st = zalloc(sizeof(*ev_st));
 	size_t value_len = strlen(value);
 
+	if (!ev_st)
+		return NULL;
 	ev_st->value = val;
 	ev_st->name = zalloc(sizeof(char) * value_len + 1);
+	if (!ev_st->name) {
+		free(ev_st);
+		return NULL;
+	}
 	memcpy(ev_st->name, value, value_len);
 
 	return ev_st;
@@ -69,6 +75,8 @@ ivi_policy_add_state(struct ivi_policy *policy, uint32_t state, const char *valu
 		return;
 
 	ev_st = ivi_policy_state_event_create(state, value);
+	if (!ev_st)
+		return;
 	wl_list_insert(&policy->states, &ev_st->link);
 }
 
@@ -80,6 +88,8 @@ ivi_policy_add_event(struct ivi_policy *policy, uint32_t ev, const char *value)
 		return;
 
 	ev_st = ivi_policy_state_event_create(ev, value);
+	if (!ev_st)
+		return;
 	wl_list_insert(&policy->events, &ev_st->link);
 }
 
@@ -93,6 +103,8 @@ ivi_policy_add_default_states(struct ivi_policy *policy)
 	for (uint32_t i = 0; i < ARRAY_LENGTH(default_states); i ++) {
 		struct state_event *ev_st =
 			ivi_policy_state_event_create(i, default_states[i]);
+		if (!ev_st)
+			return;
 		wl_list_insert(&policy->states, &ev_st->link);
 	}
 }
@@ -107,6 +119,8 @@ ivi_policy_add_default_events(struct ivi_policy *policy)
 	for (uint32_t i = 0; i < ARRAY_LENGTH(default_events); i ++) {
 		struct state_event *ev_st =
 			ivi_policy_state_event_create(i, default_events[i]);
+		if (!ev_st)
+			return;
 		wl_list_insert(&policy->events, &ev_st->link);
 	}
 }
@@ -173,6 +187,8 @@ ivi_policy_create(struct ivi_compositor *ivi,
 {
 	struct ivi_policy *policy = zalloc(sizeof(*policy));
 
+	if (!policy)
+		return NULL;
 	policy->user_data = user_data;
 	policy->ivi = ivi;
 	policy->state_change_in_progress = false;
@@ -270,10 +286,6 @@ ivi_policy_add(struct ivi_policy *policy, const char *app_id, uint32_t state,
 		return -1;
 	}
 
-	a_policy = zalloc(sizeof(*a_policy));
-	if (!a_policy)
-		return -1;
-
 	if (policy->state_change_in_progress)
 		return -1;
 
@@ -286,8 +298,16 @@ ivi_policy_add(struct ivi_policy *policy, const char *app_id, uint32_t state,
 	if (!ivi_policy_state_is_known(state, policy))
 		return -1;
 
+	a_policy = zalloc(sizeof(*a_policy));
+	if (!a_policy)
+		return -1;
+
 	app_id_len = strlen(app_id);
 	a_policy->app_id = zalloc(sizeof(char) * app_id_len + 1);
+	if (!a_policy->app_id) {
+		free(a_policy);
+		return -1;
+	}
 	memcpy(a_policy->app_id, app_id, app_id_len);
 
 	a_policy->state = state;

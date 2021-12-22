@@ -754,6 +754,10 @@ ivi_enable_remote_outputs(struct ivi_compositor *ivi)
 		}
 
 		ivi_output = zalloc(sizeof(*ivi_output));
+		if (!ivi_output) {
+			free(_name);
+			continue;
+		}
 
 		ivi_output->ivi = ivi;
 		ivi_output->name = _name;
@@ -806,6 +810,10 @@ ivi_enable_waltham_outputs(struct ivi_compositor *ivi)
 		}
 
 		ivi_output = zalloc(sizeof(*ivi_output));
+		if (!ivi_output) {
+			free(_name);
+			continue;
+		}
 
 		ivi_output->ivi = ivi;
 		ivi_output->name = _name;
