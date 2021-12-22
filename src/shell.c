@@ -876,9 +876,13 @@ create_black_surface_view(struct ivi_output *output)
 		return;
 
 	surface = weston_surface_create(wc);
+	if (!surface)
+		return;
 	view = weston_view_create(surface);
-
-	assert(view || surface);
+	if (!view) {
+		weston_surface_destroy(surface);
+		return;
+	}
 
 	weston_surface_set_color(surface, 0.0, 0.0, 0.0, 1);
 	weston_surface_set_size(surface, woutput->width, woutput->height);
