@@ -406,6 +406,8 @@ screenshot_set_buffer_size_per_output(struct buffer_size *buff_size,
 	buff_size->max_x = MAX(buff_size->max_x, output->offset_x + output->width);
 	buff_size->max_y = MAX(buff_size->max_y, output->offset_y + output->height);
 
+	buff_size->width = buff_size->max_x - buff_size->min_x;
+	buff_size->height = buff_size->max_y - buff_size->min_y;
 }
 
 static void
