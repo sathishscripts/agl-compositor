@@ -1768,6 +1768,11 @@ int wet_main(int argc, char *argv[])
 	wl_display_destroy_clients(display);
 
 error_compositor:
+	free(backend);
+	backend = NULL;
+	free(modules);
+	modules = NULL;
+
 	weston_compositor_tear_down(ivi.compositor);
 
 	weston_compositor_log_scope_destroy(log_scope);
