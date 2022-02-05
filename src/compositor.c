@@ -1589,7 +1589,7 @@ copy_command_line(int argc, char * const argv[])
 }
 
 WL_EXPORT
-int wet_main(int argc, char *argv[])
+int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_data)
 {
 	struct ivi_compositor ivi = { 0 };
 	char *cmdline;
@@ -1700,7 +1700,7 @@ int wet_main(int argc, char *argv[])
 		if (!signals[i])
 			goto error_signals;
 
-	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi);
+	ivi.compositor = weston_compositor_create(display, log_ctx, &ivi, test_data);
 	if (!ivi.compositor) {
 		weston_log("fatal: failed to create compositor.\n");
 		goto error_signals;
