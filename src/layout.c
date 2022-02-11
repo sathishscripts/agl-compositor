@@ -746,8 +746,6 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 
 		weston_view_set_output(view, output->output);
 		weston_layer_entry_insert(&ivi->hidden.view_list, &view->layer_link);
-		/* force repaint of the entire output */
-
 		weston_log("Placed app_id %s, type %s in hidden layer\n",
 				app_id, ivi_layout_get_surface_role_name(surf));
 	}
