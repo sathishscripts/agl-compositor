@@ -85,30 +85,6 @@ get_ivi_shell_seat(struct weston_seat *seat)
 			    struct ivi_shell_seat, seat_destroy_listener);
 }
 
-
-static void
-ivi_shell_seat_handle_keyboard_focus(struct wl_listener *listener, void *data)
-{
-	struct weston_keyboard *keyboard = data;
-	struct ivi_shell_seat *shseat = get_ivi_shell_seat(keyboard->seat);
-
-	if (shseat->focused_surface) {
-		struct ivi_surface *surf =
-			get_ivi_shell_surface(shseat->focused_surface);
-		if (surf && --surf->focus_count == 0)
-			weston_desktop_surface_set_activated(surf->dsurface, false);
-	}
-
-	shseat->focused_surface = weston_surface_get_main_surface(keyboard->focus);
-
-	if (shseat->focused_surface) {
-		struct ivi_surface *surf =
-			get_ivi_shell_surface(shseat->focused_surface);
-		if (surf && surf->focus_count++ == 0)
-			weston_desktop_surface_set_activated(surf->dsurface, true);
-	}
-}
-
 static void
 ivi_shell_seat_handle_pointer_focus(struct wl_listener *listener, void *data)
 {
@@ -139,13 +115,11 @@ ivi_shell_seat_handle_pointer_focus(struct wl_listener *listener, void *data)
 static void
 ivi_shell_seat_handle_caps_changed(struct wl_listener *listener, void *data)
 {
-	struct weston_keyboard *keyboard;
 	struct weston_pointer *pointer;
 	struct ivi_shell_seat *shseat;
 
 	shseat = container_of(listener, struct ivi_shell_seat,
 			      caps_changed_listener);
-	keyboard = weston_seat_get_keyboard(shseat->seat);
 	pointer = weston_seat_get_pointer(shseat->seat);
 
 	if (pointer && wl_list_empty(&shseat->pointer_focus_listener.link)) {
@@ -154,15 +128,6 @@ ivi_shell_seat_handle_caps_changed(struct wl_listener *listener, void *data)
 	} else {
 		wl_list_remove(&shseat->pointer_focus_listener.link);
 		wl_list_init(&shseat->pointer_focus_listener.link);
-	}
-
-	if (keyboard &&
-	    wl_list_empty(&shseat->keyboard_focus_listener.link)) {
-		wl_signal_add(&keyboard->focus_signal,
-			      &shseat->keyboard_focus_listener);
-	} else if (!keyboard) {
-		wl_list_remove(&shseat->keyboard_focus_listener.link);
-		wl_list_init(&shseat->keyboard_focus_listener.link);
 	}
 }
 
@@ -184,8 +149,6 @@ ivi_shell_seat_create(struct weston_seat *seat, bool hide_cursor)
 	shseat->seat_destroy_listener.notify = ivi_shell_seat_handle_destroy;
 	wl_signal_add(&seat->destroy_signal, &shseat->seat_destroy_listener);
 
-	shseat->keyboard_focus_listener.notify =
-		ivi_shell_seat_handle_keyboard_focus;
 	wl_list_init(&shseat->keyboard_focus_listener.link);
 
 	shseat->pointer_focus_listener.notify =
