@@ -289,6 +289,19 @@ struct ivi_surface {
 	struct wl_signal signal_advertise_app;
 };
 
+struct ivi_shell_seat {
+	struct weston_seat *seat;
+	struct weston_surface *focused_surface;
+
+	bool hide_cursor;
+	bool new_caps_sent;
+
+	struct wl_listener seat_destroy_listener;
+	struct wl_listener caps_changed_listener;
+	struct wl_listener keyboard_focus_listener;
+	struct wl_listener pointer_focus_listener;
+};
+
 struct ivi_shell_client {
 	struct wl_list link;
 	char *command;
