@@ -427,8 +427,8 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 	weston_view_set_position(view, woutput->x, woutput->y);
 	weston_layer_entry_insert(&ivi->fullscreen.view_list, &view->layer_link);
 
-	weston_view_update_transform(view);
-	weston_view_damage_below(view);
+	weston_view_geometry_dirty(view);
+	weston_surface_damage(view->surface);
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
@@ -456,8 +456,9 @@ ivi_layout_desktop_resize(struct ivi_surface *surface,
 					width, height);
 
 	weston_view_set_position(view, x, y);
-	weston_view_update_transform(view);
-	weston_view_damage_below(view);
+
+	weston_view_geometry_dirty(view);
+	weston_surface_damage(view->surface);
 }
 
 void
@@ -541,8 +542,8 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 	weston_view_set_position(view, x, y);
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 
-	weston_view_update_transform(view);
-	weston_view_damage_below(view);
+	weston_view_geometry_dirty(view);
+	weston_surface_damage(view->surface);
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
@@ -606,8 +607,8 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 
 	weston_layer_entry_insert(&ivi->popup.view_list, &view->layer_link);
 
-	weston_view_update_transform(view);
-	weston_view_damage_below(view);
+	weston_view_geometry_dirty(view);
+	weston_surface_damage(view->surface);
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
@@ -843,7 +844,8 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 				view->surface->is_mapped = false;
 
 				weston_layer_entry_remove(&view->layer_link);
-				weston_view_damage_below(view);
+				weston_view_geometry_dirty(view);
+				weston_surface_damage(view->surface);
 				ivi_output->active = NULL;
 			}
 		} else {
@@ -859,6 +861,7 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 		struct weston_view *view  = surf->view;
 
 		weston_layer_entry_remove(&view->layer_link);
-		weston_view_damage_below(view);
+		weston_view_geometry_dirty(view);
+		weston_surface_damage(view->surface);
 	}
 }
