@@ -1645,13 +1645,14 @@ int wet_main(int argc, char *argv[])
 
 	if (version) {
 		printf(PACKAGE_STRING "\n");
-		return EXIT_SUCCESS;
+		ret = EXIT_SUCCESS;
+		goto exit_signals;
 	}
 
 	log_ctx = weston_log_ctx_compositor_create();
 	if (!log_ctx) {
 		fprintf(stderr, "Failed to initialize weston debug framework.\n");
-		return ret;
+		goto exit_signals;
 	}
 
         log_scope = weston_compositor_add_log_scope(log_ctx, "log",
@@ -1796,5 +1797,10 @@ error_signals:
 	if (ivi.config)
 		weston_config_destroy(ivi.config);
 
+exit_signals:
+	free(log);
+	free(config_file);
+	free(socket_name);
+	free(option_modules);
 	return ret;
 }
