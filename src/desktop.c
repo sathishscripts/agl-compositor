@@ -444,6 +444,7 @@ ivi_shell_destroy(struct wl_listener *listener, void *data)
 
 	weston_desktop_destroy(ivi->desktop);
 	ivi_compositor_destroy_pending_surfaces(ivi);
+	wl_list_remove(&listener->link);
 }
 
 int
