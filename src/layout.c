@@ -284,7 +284,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 	 * we can't make use here of the ivi_layout_get_output_from_surface()
 	 * due to the fact that we'll always land here when a surface performs
 	 * a commit and pending_output will not bet set. This works in tandem
-	 * with 'activated_by_default' at this point to avoid tripping over
+	 * with 'mapped' at this point to avoid tripping over
 	 * to a surface that continuously updates its content
 	 */
 	if (surf->role == IVI_SURFACE_ROLE_DESKTOP)
@@ -300,7 +300,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			return;
 
 		/* we can only activate it again by using the protocol */
-		if (surf->activated_by_default)
+		if (surf->mapped)
 			return;
 
 		/* check first if there aren't any outputs being set */
@@ -340,7 +340,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 					weston_desktop_surface_get_app_id(surf->dsurface),
 					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate(r_output, app_id);
-				surf->activated_by_default = true;
+				surf->mapped = true;
 			} else if (!app_id) {
 				/*
 				 * applications not setting an app_id, or
@@ -352,7 +352,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 				weston_log("Surface no app_id, role %s activating by default\n",
 					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate_by_surf(r_output, surf);
-				surf->activated_by_default = true;
+				surf->mapped = true;
 			}
 		}
 
@@ -369,7 +369,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		 * ivi_layout_activate_complete() terminates so we use the
 		 * current active surface to avoid hitting this again and again
 		 * */
-		if (surf->activated_by_default && output->active == surf)
+		if (surf->mapped && output->active == surf)
 			return;
 
 		if (app_id) {
@@ -377,7 +377,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 					weston_desktop_surface_get_app_id(surf->dsurface),
 					ivi_layout_get_surface_role_name(surf));
 			ivi_layout_activate(output, app_id);
-			surf->activated_by_default = true;
+			surf->mapped = true;
 		}
 		return;
 	}
@@ -409,7 +409,7 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 
 	if (policy && policy->api.surface_activate_by_default &&
 	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
-	    !surface->activated_by_default)
+	    !surface->mapped)
 		return;
 
 	if (surface->view->is_mapped)
@@ -486,7 +486,7 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	if (policy && policy->api.surface_activate_by_default &&
 	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
-	    !surface->activated_by_default)
+	    !surface->mapped)
 		return;
 
 	if (surface->view->is_mapped)
@@ -584,7 +584,7 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 
 	if (policy && policy->api.surface_activate_by_default &&
 	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
-	    !surface->activated_by_default)
+	    !surface->mapped)
 		return;
 
 	if (surface->view->is_mapped)
@@ -639,8 +639,8 @@ ivi_layout_popup_re_add(struct ivi_surface *surface)
 
 	/* reset the activate by default in order to (still) allow the surface
 	 * to be activaved using the request */
-	if (!surface->activated_by_default)
-		surface->activated_by_default = true;
+	if (!surface->mapped)
+		surface->mapped = true;
 
 	ivi_layout_popup_committed(surface);
 }
@@ -658,8 +658,8 @@ ivi_layout_surface_is_split_or_fullscreen(struct ivi_surface *surf)
 
 	/* reset the activate by default in order to (still) allow the surface
 	 * to be activaved using the request */
-	if (!surf->activated_by_default)
-		surf->activated_by_default = true;
+	if (!surf->mapped)
+		surf->mapped = true;
 
 	wl_list_for_each(is, &ivi->surfaces, link)
 		if (is == surf)

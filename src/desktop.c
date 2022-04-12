@@ -134,7 +134,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	surface->ivi = ivi;
 	surface->dsurface = dsurface;
 	surface->role = IVI_SURFACE_ROLE_NONE;
-	surface->activated_by_default = false;
+	surface->mapped = false;
 	surface->advertised_on_launch = false;
 	surface->checked_pending = false;
 	wl_list_init(&surface->link);

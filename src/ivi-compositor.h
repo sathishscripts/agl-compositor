@@ -264,7 +264,7 @@ struct ivi_surface {
 		int32_t x, y;
 		int32_t width, height;
 	} pending;
-	bool activated_by_default;
+	bool mapped;
 	bool advertised_on_launch;
 	bool checked_pending;
 
