@@ -203,6 +203,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 				 woutput->y + output->area.y);
 
 	view->is_mapped = true;
+	surf->mapped = true;
 	view->surface->is_mapped = true;
 
 	if (output->active) {
@@ -339,7 +340,6 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 					weston_desktop_surface_get_app_id(surf->dsurface),
 					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate(r_output, app_id);
-				surf->mapped = true;
 			} else if (!app_id) {
 				/*
 				 * applications not setting an app_id, or
@@ -351,7 +351,6 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 				weston_log("Surface no app_id, role %s activating by default\n",
 					ivi_layout_get_surface_role_name(surf));
 				ivi_layout_activate_by_surf(r_output, surf);
-				surf->mapped = true;
 			}
 		}
 
@@ -376,7 +375,6 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 					weston_desktop_surface_get_app_id(surf->dsurface),
 					ivi_layout_get_surface_role_name(surf));
 			ivi_layout_activate(output, app_id);
-			surf->mapped = true;
 		}
 		return;
 	}
