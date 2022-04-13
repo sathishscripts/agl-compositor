@@ -195,6 +195,8 @@ ivi_layout_activate_complete(struct ivi_output *output,
 
 	if (weston_view_is_mapped(view)) {
 		weston_layer_entry_remove(&view->layer_link);
+	} else {
+		weston_view_update_transform(view);
 	}
 
 	weston_view_set_output(view, woutput);
