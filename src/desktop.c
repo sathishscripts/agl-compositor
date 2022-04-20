@@ -296,7 +296,7 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	}
 
 skip_output_asignment:
-	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
+	weston_log(">> Removed surface %p, app_id %s, role %s\n", surface,
 			app_id, ivi_layout_get_surface_role_name(surface));
 
 	if (app_id && output)
