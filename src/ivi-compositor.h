@@ -423,9 +423,12 @@ agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 void
 ivi_destroy_waltham_destroy(struct ivi_surface *surface);
 
-bool
-ivi_check_pending_surface(struct ivi_surface *surface);
+void
+ivi_check_pending_surface_desktop(struct ivi_surface *surface,
+				  enum ivi_surface_role *role);
 
+struct ivi_output *
+ivi_layout_find_bg_output(struct ivi_compositor *ivi);
 void
 ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi);
 

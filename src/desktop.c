@@ -103,6 +103,36 @@ get_focused_output(struct weston_compositor *compositor)
 	return output;
 }
 
+static void
+desktop_surface_added_configure(struct ivi_surface *surface,
+				struct ivi_output *ivi_output)
+{
+	enum ivi_surface_role role = IVI_SURFACE_ROLE_NONE;
+	struct weston_desktop_surface *dsurface = surface->dsurface;
+
+	ivi_check_pending_surface_desktop(surface, &role);
+	if ((role != IVI_SURFACE_ROLE_DESKTOP &&
+	     role != IVI_SURFACE_ROLE_FULLSCREEN) ||
+	     role == IVI_SURFACE_ROLE_NONE)
+		return;
+
+	if (role == IVI_SURFACE_ROLE_FULLSCREEN) {
+		struct ivi_output *bg_output =
+			ivi_layout_find_bg_output(surface->ivi);
+		assert(bg_output);
+		weston_desktop_surface_set_fullscreen(dsurface, true);
+		weston_desktop_surface_set_size(dsurface,
+						bg_output->output->width,
+						bg_output->output->height);
+		return;
+	}
+
+	weston_desktop_surface_set_maximized(dsurface, true);
+	weston_desktop_surface_set_size(dsurface,
+					ivi_output->area.width,
+					ivi_output->area.height);
+}
+
 
 static void
 desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
@@ -168,16 +198,7 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 
 	if (output && ivi->shell_client.ready) {
 		struct ivi_output *ivi_output = to_ivi_output(output);
-
-		/* verify if by any chance this surfaces hasn't been assigned a
-		 * different role before sending the maximized state */
-		if (!ivi_check_pending_surface(surface)) {
-			weston_log("Setting surface to initial size of surface to %dx%d\n",
-					ivi_output->area.width, ivi_output->area.height);
-			weston_desktop_surface_set_maximized(dsurface, true);
-			weston_desktop_surface_set_size(dsurface,
-					ivi_output->area.width, ivi_output->area.height);
-		}
+		desktop_surface_added_configure(surface, ivi_output);
 	}
 	/*
 	 * We delay creating "normal" desktop surfaces until later, to
