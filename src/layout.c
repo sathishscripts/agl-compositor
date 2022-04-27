@@ -253,8 +253,7 @@ ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi)
 	return NULL;
 }
 
-
-static struct ivi_output *
+struct ivi_output *
 ivi_layout_find_bg_output(struct ivi_compositor *ivi)
 {
 	struct ivi_output *out;
@@ -403,6 +402,7 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 
 	struct ivi_output *output = surface->split.output;
 	struct weston_output *woutput = output->output;
+	struct ivi_output *bg_output = ivi_layout_find_bg_output(ivi);
 
 	struct weston_view *view = surface->view;
 	struct weston_geometry geom;
@@ -416,12 +416,19 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 		return;
 
 	geom = weston_desktop_surface_get_geometry(dsurface);
-	weston_log("(fs) geom x %d, y %d, width %d, height %d\n", geom.x, geom.y,
-			geom.width, geom.height);
-
 	assert(surface->role == IVI_SURFACE_ROLE_FULLSCREEN);
 
-	weston_desktop_surface_set_fullscreen(dsurface, true);
+	if (!weston_desktop_surface_get_fullscreen(dsurface) ||
+	    geom.width != bg_output->output->width ||
+	    geom.height != bg_output->output->height) {
+		struct weston_desktop_client *desktop_client =
+			weston_desktop_surface_get_client(dsurface);
+		struct wl_client *client =
+			weston_desktop_client_get_client(desktop_client);
+		wl_client_post_implementation_error(client,
+				"Can not display surface due to invalid geometry");
+		return;
+	}
 
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view, woutput->x, woutput->y);
