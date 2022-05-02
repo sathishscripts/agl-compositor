@@ -405,46 +405,80 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 	struct ivi_output *bg_output = ivi_layout_find_bg_output(ivi);
 
 	struct weston_view *view = surface->view;
-	struct weston_geometry geom;
+	struct weston_geometry geom =
+		weston_desktop_surface_get_geometry(dsurface);
+
+	bool is_fullscreen = weston_desktop_surface_get_fullscreen(dsurface);
+	bool is_dim_same =
+		geom.width == bg_output->output->width &&
+		geom.height == bg_output->output->height;
 
 	if (policy && policy->api.surface_activate_by_default &&
 	    !policy->api.surface_activate_by_default(surface, surface->ivi) &&
 	    !surface->mapped)
 		return;
 
-	if (surface->view->is_mapped)
-		return;
-
-	geom = weston_desktop_surface_get_geometry(dsurface);
 	assert(surface->role == IVI_SURFACE_ROLE_FULLSCREEN);
 
-	if (!weston_desktop_surface_get_fullscreen(dsurface) ||
-	    geom.width != bg_output->output->width ||
-	    geom.height != bg_output->output->height) {
+	if (weston_view_is_mapped(view))
+		return;
+
+	/* if we still get here but we haven't resized so far, send configure
+	 * events to do so */
+	if (surface->state != RESIZING && (!is_fullscreen || !is_dim_same)) {
+		struct ivi_output *bg_output =
+			ivi_layout_find_bg_output(surface->ivi);
+
+		weston_log("Placing fullscreen app_id %s, type %s in hidden layer\n",
+				app_id, ivi_layout_get_surface_role_name(surface));
+		weston_desktop_surface_set_fullscreen(dsurface, true);
+		weston_desktop_surface_set_size(dsurface,
+						bg_output->output->width,
+						bg_output->output->height);
+
+		surface->state = RESIZING;
+		weston_view_set_output(view, output->output);
+		weston_layer_entry_insert(&ivi->hidden.view_list, &view->layer_link);
+		return;
+	}
+
+	/* eventually, we would set the surface fullscreen, but the client
+	 * hasn't resized correctly by this point, so terminate connection */
+	if (surface->state == RESIZING && is_fullscreen && !is_dim_same) {
 		struct weston_desktop_client *desktop_client =
 			weston_desktop_surface_get_client(dsurface);
 		struct wl_client *client =
 			weston_desktop_client_get_client(desktop_client);
 		wl_client_post_implementation_error(client,
-				"Can not display surface due to invalid geometry");
+				"can not display surface due to invalid geometry."
+				" Client should perform a geometry resize!");
 		return;
 	}
 
-	weston_view_set_output(view, woutput);
-	weston_view_set_position(view, woutput->x, woutput->y);
-	weston_layer_entry_insert(&ivi->fullscreen.view_list, &view->layer_link);
+	/* this implies we resized correctly */
+	if (!weston_view_is_mapped(view)) {
+		weston_layer_entry_remove(&view->layer_link);
 
-	weston_view_geometry_dirty(view);
-	weston_surface_damage(view->surface);
+		weston_view_set_output(view, woutput);
+		weston_view_set_position(view, woutput->x, woutput->y);
+		weston_layer_entry_insert(&ivi->fullscreen.view_list, &view->layer_link);
 
-	wsurface->is_mapped = true;
-	surface->view->is_mapped = true;
+		wsurface->is_mapped = true;
+		surface->view->is_mapped = true;
+		surface->state = FULLSCREEN;
 
-	shell_advertise_app_state(ivi, app_id,
-				  NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+		weston_view_geometry_dirty(view);
+		weston_surface_damage(view->surface);
 
-	weston_log("Activation completed for app_id %s, role %s, output %s\n",
-			app_id, ivi_layout_get_surface_role_name(surface), output->name);
+		shell_advertise_app_state(ivi, app_id,
+				NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
+
+		weston_log("Activation completed for app_id %s, role %s, "
+			   "output %s\n", app_id,
+			   ivi_layout_get_surface_role_name(surface),
+			   output->name);
+
+	}
 }
 
 void

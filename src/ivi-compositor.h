@@ -267,6 +267,11 @@ struct ivi_surface {
 	bool mapped;
 	bool advertised_on_launch;
 	bool checked_pending;
+	enum {
+		NORMAL,
+		RESIZING,
+		FULLSCREEN,
+	} state;
 
 	enum ivi_surface_role role;
 	union {
