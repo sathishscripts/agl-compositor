@@ -356,8 +356,6 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 	    !wl_list_empty(&surface->ivi->desktop_clients))
 		wl_signal_emit(&surface->signal_advertise_app, surface);
 
-	weston_compositor_schedule_repaint(surface->ivi->compositor);
-
 	switch (surface->role) {
 	case IVI_SURFACE_ROLE_DESKTOP:
 	case IVI_SURFACE_ROLE_REMOTE:
