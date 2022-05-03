@@ -4,8 +4,9 @@ project('agl-compositor',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
+    'werror=true',
   ],
-  meson_version: '>= 0.47',
+  meson_version: '>= 0.53',
   license: 'MIT/Expat',
 )
 
@@ -21,8 +22,6 @@ add_project_arguments(
   cc.get_supported_arguments([
     '-Wno-unused-parameter',
     '-Wno-pedantic',
-    '-Wextra',
-    '-Werror'
   ]),
   language: 'c'
 )
