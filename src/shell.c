@@ -1338,14 +1338,6 @@ bind_agl_shell(struct wl_client *client,
 		return;
 	}
 
-#if 0
-	if (ivi->shell_client.client != client) {
-		wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
-				       "client not authorized to use agl_shell");
-		return;
-	}
-#endif
-
 	if (ivi->shell_client.resource) {
 		wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound");
