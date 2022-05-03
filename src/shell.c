@@ -49,6 +49,18 @@
 static void
 create_black_surface_view(struct ivi_output *output);
 
+static struct ivi_surface *
+get_ivi_shell_surface(struct weston_surface *wsurface)
+{
+	if (weston_surface_is_desktop_surface(wsurface)) {
+		struct weston_desktop_surface *dsurface =
+			weston_surface_get_desktop_surface(wsurface);
+		return weston_desktop_surface_get_user_data(dsurface);
+	}
+
+	return NULL;
+}
+
 void
 agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 					   struct ivi_surface *surface)
@@ -742,6 +754,65 @@ ivi_shell_init(struct ivi_compositor *ivi)
 				  WESTON_LAYER_POSITION_FULLSCREEN);
 
 	return 0;
+}
+
+
+static void
+ivi_surf_destroy(struct ivi_surface *surf)
+{
+	struct weston_surface *wsurface = surf->view->surface;
+
+	if (weston_surface_is_mapped(wsurface)) {
+		weston_desktop_surface_unlink_view(surf->view);
+		weston_view_destroy(surf->view);
+	}
+
+	wl_list_remove(&surf->link);
+	free(surf);
+}
+
+static void
+ivi_shell_destroy_views_on_layer(struct weston_layer *layer)
+{
+	struct weston_view *view, *view_next;
+
+	wl_list_for_each_safe(view, view_next, &layer->view_list.link, layer_link.link) {
+		struct ivi_surface *ivi_surf =
+			get_ivi_shell_surface(view->surface);
+		if (ivi_surf)
+			ivi_surf_destroy(ivi_surf);
+	}
+}
+
+static void
+ivi_shell_destroy_views_on_fullscreen_layer(struct ivi_compositor *ivi)
+{
+	struct ivi_output *ivi_output;
+
+	wl_list_for_each(ivi_output, &ivi->outputs, link)
+		weston_surface_destroy(ivi_output->fullscreen_view.fs->view->surface);
+}
+
+void
+ivi_shell_finalize(struct ivi_compositor *ivi)
+{
+	ivi_shell_destroy_views_on_layer(&ivi->hidden);
+	weston_layer_fini(&ivi->hidden);
+
+	ivi_shell_destroy_views_on_layer(&ivi->background);
+	weston_layer_fini(&ivi->background);
+
+	ivi_shell_destroy_views_on_layer(&ivi->normal);
+	weston_layer_fini(&ivi->normal);
+
+	ivi_shell_destroy_views_on_layer(&ivi->panel);
+	weston_layer_fini(&ivi->panel);
+
+	ivi_shell_destroy_views_on_layer(&ivi->popup);
+	weston_layer_fini(&ivi->popup);
+
+	ivi_shell_destroy_views_on_fullscreen_layer(ivi);
+	weston_layer_fini(&ivi->fullscreen);
 }
 
 static void

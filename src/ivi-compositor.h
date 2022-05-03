@@ -437,4 +437,7 @@ ivi_layout_find_bg_output(struct ivi_compositor *ivi);
 void
 ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi);
 
+void
+ivi_shell_finalize(struct ivi_compositor *ivi);
+
 #endif
