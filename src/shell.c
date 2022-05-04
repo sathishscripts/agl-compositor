@@ -638,11 +638,6 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 	const char *app_id =
 		weston_desktop_surface_get_app_id(surface->dsurface);
 
-	if (!app_id) {
-		*role = IVI_SURFACE_ROLE_NONE;
-		return;
-	}
-
 	role_pending_list = &ivi->popup_pending_apps;
 	wl_list_for_each(p_popup, role_pending_list, link) {
 		if (!strcmp(app_id, p_popup->app_id)) {
