@@ -344,6 +344,17 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 	    !wl_list_empty(&surface->ivi->desktop_clients))
 		wl_signal_emit(&surface->signal_advertise_app, surface);
 
+	/* this repaint schedule is needed to allow resizing to work with the
+	 * help of the hidden layer:
+	 *
+	 * 1. add the view in the hidden layer and send out correct dimensions
+	 * 2. clients changes its dimensions
+	 * 3. client commits with the new dimensions
+	 *
+	 * For desktop and fullscreen, desktop_surface_added() sends the
+	 * dimensions from the beginning so applications no need to resize, but
+	 * if that weren't the case we still need this in.
+	 */
 	weston_compositor_schedule_repaint(surface->ivi->compositor);
 
 	switch (surface->role) {
