@@ -271,6 +271,7 @@ struct ivi_surface {
 		NORMAL,
 		RESIZING,
 		FULLSCREEN,
+		HIDDEN,
 	} state;
 
 	enum ivi_surface_role role;

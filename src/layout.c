@@ -648,7 +648,7 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	    !surface->mapped)
 		return;
 
-	if (surface->view->is_mapped)
+	if (surface->view->is_mapped || surface->state == HIDDEN)
 		return;
 
 	assert(surface->role == IVI_SURFACE_ROLE_POPUP);
@@ -658,6 +658,7 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	ivi_compute_popup_position(woutput, view,
 				   surface->popup.x, surface->popup.y, &new_x, &new_y);
 	weston_view_set_position(view, new_x, new_y);
+	weston_view_update_transform(view);
 
 	/* only clip the pop-up dialog window if we have a valid
 	 * width and height being passed on. Users might not want to have one
@@ -706,6 +707,7 @@ ivi_layout_popup_re_add(struct ivi_surface *surface)
 	if (!surface->mapped)
 		surface->mapped = true;
 
+	surface->state = NORMAL;
 	ivi_layout_popup_committed(surface);
 }
 
@@ -923,6 +925,9 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 		}
 	} else if (surf->role == IVI_SURFACE_ROLE_POPUP) {
 		struct weston_view *view  = surf->view;
+
+		weston_view_unmap(view);
+		surf->state = HIDDEN;
 
 		weston_layer_entry_remove(&view->layer_link);
 		weston_view_geometry_dirty(view);
