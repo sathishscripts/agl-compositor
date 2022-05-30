@@ -628,7 +628,7 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 
 	role_pending_list = &ivi->popup_pending_apps;
 	wl_list_for_each(p_popup, role_pending_list, link) {
-		if (!strcmp(app_id, p_popup->app_id)) {
+		if (app_id && !strcmp(app_id, p_popup->app_id)) {
 			*role = IVI_SURFACE_ROLE_POPUP;
 			return;
 		}
@@ -636,7 +636,7 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 
 	role_pending_list = &ivi->split_pending_apps;
 	wl_list_for_each(p_split, role_pending_list, link) {
-		if (!strcmp(app_id, p_split->app_id)) {
+		if (app_id && !strcmp(app_id, p_split->app_id)) {
 			*role = IVI_SURFACE_ROLE_SPLIT_V;
 			return;
 		}
@@ -644,7 +644,7 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 
 	role_pending_list = &ivi->fullscreen_pending_apps;
 	wl_list_for_each(p_fullscreen, role_pending_list, link) {
-		if (!strcmp(app_id, p_fullscreen->app_id)) {
+		if (app_id && !strcmp(app_id, p_fullscreen->app_id)) {
 			*role = IVI_SURFACE_ROLE_FULLSCREEN;
 			return;
 		}
@@ -652,7 +652,7 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 
 	role_pending_list = &ivi->remote_pending_apps;
 	wl_list_for_each(p_remote, role_pending_list, link) {
-		if (!strcmp(app_id, p_remote->app_id)) {
+		if (app_id && !strcmp(app_id, p_remote->app_id)) {
 			*role = IVI_SURFACE_ROLE_REMOTE;
 			return;
 		}
