@@ -192,6 +192,8 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	struct ivi_compositor *ivi = output->ivi;
 	struct weston_output *woutput = output->output;
 	struct weston_view *view = surf->view;
+	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(ivi);
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
 
 	if (weston_view_is_mapped(view)) {
 		weston_layer_entry_remove(&view->layer_link);
@@ -220,6 +222,9 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 	weston_view_geometry_dirty(view);
 	weston_surface_damage(view->surface);
+
+	if (ivi_seat)
+		ivi_shell_activate_surface(surf, ivi_seat, WESTON_ACTIVATE_FLAG_NONE);
 
 	/*
 	 * the 'remote' role now makes use of this part so make sure we don't
@@ -408,6 +413,9 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 	struct weston_geometry geom =
 		weston_desktop_surface_get_geometry(dsurface);
 
+	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(ivi);
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
+
 	bool is_fullscreen = weston_desktop_surface_get_fullscreen(dsurface);
 	bool is_dim_same =
 		geom.width == bg_output->output->width &&
@@ -470,6 +478,9 @@ ivi_layout_fullscreen_committed(struct ivi_surface *surface)
 		weston_view_geometry_dirty(view);
 		weston_surface_damage(view->surface);
 
+		if (ivi_seat)
+			ivi_shell_activate_surface(surface, ivi_seat, WESTON_ACTIVATE_FLAG_NONE);
+
 		shell_advertise_app_state(ivi, app_id,
 				NULL, AGL_SHELL_DESKTOP_APP_STATE_ACTIVATED);
 
@@ -515,6 +526,9 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 
 	struct ivi_output *output = surface->split.output;
 	struct weston_output *woutput = output->output;
+
+	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(ivi);
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
 
 	struct weston_view *view = surface->view;
 	struct weston_geometry geom;
@@ -586,6 +600,9 @@ ivi_layout_split_committed(struct ivi_surface *surface)
 	weston_view_geometry_dirty(view);
 	weston_surface_damage(view->surface);
 
+	if (ivi_seat)
+		ivi_shell_activate_surface(surface, ivi_seat, WESTON_ACTIVATE_FLAG_NONE);
+
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;
 
@@ -621,6 +638,9 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 	struct ivi_output *output = surface->popup.output;
 	struct weston_output *woutput = output->output;
 
+	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(ivi);
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
+
 	struct weston_view *view = surface->view;
 
 	if (policy && policy->api.surface_activate_by_default &&
@@ -650,6 +670,9 @@ ivi_layout_popup_committed(struct ivi_surface *surface)
 
 	weston_view_geometry_dirty(view);
 	weston_surface_damage(view->surface);
+
+	if (ivi_seat)
+		ivi_shell_activate_surface(surface, ivi_seat, WESTON_ACTIVATE_FLAG_NONE);
 
 	wsurface->is_mapped = true;
 	surface->view->is_mapped = true;

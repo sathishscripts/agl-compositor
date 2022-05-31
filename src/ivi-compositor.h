@@ -462,4 +462,9 @@ get_ivi_shell_seat(struct weston_seat *seat);
 struct weston_seat *
 get_ivi_shell_weston_first_seat(struct ivi_compositor *ivi);
 
+void
+ivi_shell_activate_surface(struct ivi_surface *ivi_surf,
+                          struct ivi_shell_seat *ivi_seat,
+                          uint32_t flags);
+
 #endif

@@ -91,6 +91,34 @@ get_focused_output(struct weston_compositor *compositor)
 	return output;
 }
 
+void
+ivi_shell_activate_surface(struct ivi_surface *ivi_surf,
+                          struct ivi_shell_seat *ivi_seat,
+                          uint32_t flags)
+{
+       struct weston_desktop_surface *dsurface = ivi_surf->dsurface;
+       struct weston_surface *surface =
+               weston_desktop_surface_get_surface(dsurface);
+
+       weston_view_activate_input(ivi_surf->view, ivi_seat->seat, flags);
+
+       if (ivi_seat->focused_surface) {
+               struct ivi_surface *current_focus =
+                       get_ivi_shell_surface(ivi_seat->focused_surface);
+               struct weston_desktop_surface *dsurface_focus;
+               assert(current_focus);
+
+               dsurface_focus = current_focus->dsurface;
+               if (--current_focus->focus_count == 0)
+                       weston_desktop_surface_set_activated(dsurface_focus, false);
+       }
+
+       ivi_seat->focused_surface = surface;
+       if (ivi_surf->focus_count++ == 0)
+               weston_desktop_surface_set_activated(dsurface, true);
+}
+
+
 static void
 desktop_surface_added_configure(struct ivi_surface *surface,
 				struct ivi_output *ivi_output)
@@ -222,6 +250,8 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 	const char *app_id = NULL;
+	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(surface->ivi);
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
 
 	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
 
@@ -260,6 +290,13 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 		weston_layer_entry_remove(&output->active->view->layer_link);
 		output->active = NULL;
 	}
+
+	/* clear out focused_surface to avoid a stale focused_surface. the
+	 * client shell is responsible for keeping track and switch back to the
+	 * last active surface so we don't get do anything at removal, just
+	 * reset it */
+	if (ivi_seat && ivi_seat->focused_surface == wsurface)
+		ivi_seat->focused_surface = NULL;
 
 	if (surface->role == IVI_SURFACE_ROLE_REMOTE &&
 	    output->type == OUTPUT_REMOTE)
