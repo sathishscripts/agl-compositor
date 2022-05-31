@@ -49,18 +49,6 @@
 static void
 create_black_surface_view(struct ivi_output *output);
 
-static struct ivi_surface *
-get_ivi_shell_surface(struct weston_surface *wsurface)
-{
-	if (weston_surface_is_desktop_surface(wsurface)) {
-		struct weston_desktop_surface *dsurface =
-			weston_surface_get_desktop_surface(wsurface);
-		return weston_desktop_surface_get_user_data(dsurface);
-	}
-
-	return NULL;
-}
-
 void
 agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
 					   struct ivi_surface *surface)

@@ -453,4 +453,13 @@ ivi_compositor_destroy_pending_surfaces(struct ivi_compositor *ivi);
 void
 ivi_shell_finalize(struct ivi_compositor *ivi);
 
+struct ivi_surface *
+get_ivi_shell_surface(struct weston_surface *surface);
+
+struct ivi_shell_seat *
+get_ivi_shell_seat(struct weston_seat *seat);
+
+struct weston_seat *
+get_ivi_shell_weston_first_seat(struct ivi_compositor *ivi);
+
 #endif

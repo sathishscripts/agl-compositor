@@ -32,7 +32,7 @@
 #include "ivi-compositor.h"
 #include "shared/helpers.h"
 
-static struct ivi_surface *
+struct ivi_surface *
 get_ivi_shell_surface(struct weston_surface *surface)
 {
 	struct weston_desktop_surface *desktop_surface =
@@ -59,17 +59,35 @@ ivi_shell_seat_handle_destroy(struct wl_listener *listener, void *data)
 	free(shseat);
 }
 
-static struct ivi_shell_seat *
+struct ivi_shell_seat *
 get_ivi_shell_seat(struct weston_seat *seat)
 {
 	struct wl_listener *listener;
 
+	if (!seat)
+		return NULL;
+
+
 	listener = wl_signal_get(&seat->destroy_signal,
 				 ivi_shell_seat_handle_destroy);
-	assert(listener != NULL);
+	if (!listener)
+		return NULL;
 
 	return container_of(listener,
 			    struct ivi_shell_seat, seat_destroy_listener);
+}
+
+struct weston_seat *
+get_ivi_shell_weston_first_seat(struct ivi_compositor *ivi)
+{
+	struct wl_list *node;
+	struct weston_compositor *compositor = ivi->compositor;
+
+	if (wl_list_empty(&compositor->seat_list))
+		return NULL;
+
+	node = compositor->seat_list.next;
+	return container_of(node, struct weston_seat, link);
 }
 
 static void
