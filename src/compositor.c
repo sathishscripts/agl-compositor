@@ -1307,7 +1307,8 @@ activate_binding(struct weston_seat *seat,
 {
 	struct weston_surface *focus_surface;
 	struct weston_surface *main_surface;
-	struct ivi_surface *surface;
+	struct ivi_surface *ivi_surface;
+	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(seat);
 
 	if (!focus_view)
 		return;
@@ -1315,11 +1316,12 @@ activate_binding(struct weston_seat *seat,
 	focus_surface = focus_view->surface;
 	main_surface = weston_surface_get_main_surface(focus_surface);
 
-	surface = to_ivi_surface(main_surface);
-	if (!surface)
+	ivi_surface = to_ivi_surface(main_surface);
+	if (!ivi_surface)
 		return;
 
-	weston_seat_set_keyboard_focus(seat, focus_surface);
+	if (ivi_seat)
+		ivi_shell_activate_surface(ivi_surface, ivi_seat, flags);
 }
 
 static void
