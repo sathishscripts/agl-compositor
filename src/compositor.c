@@ -1303,18 +1303,23 @@ to_ivi_surface(struct weston_surface *surface)
 
 static void
 activate_binding(struct weston_seat *seat,
-		 struct weston_view *focus_view)
+		 struct weston_view *focus_view, uint32_t flags)
 {
-	struct weston_surface *focus = focus_view->surface;
-	struct weston_surface *main_surface =
-		weston_surface_get_main_surface(focus);
+	struct weston_surface *focus_surface;
+	struct weston_surface *main_surface;
 	struct ivi_surface *surface;
+
+	if (!focus_view)
+		return;
+
+	focus_surface = focus_view->surface;
+	main_surface = weston_surface_get_main_surface(focus_surface);
 
 	surface = to_ivi_surface(main_surface);
 	if (!surface)
 		return;
 
-	weston_seat_set_keyboard_focus(seat, focus);
+	weston_seat_set_keyboard_focus(seat, focus_surface);
 }
 
 static void
@@ -1327,7 +1332,8 @@ click_to_activate_binding(struct weston_pointer *pointer,
 	if (pointer->focus == NULL)
 		return;
 
-	activate_binding(pointer->seat, pointer->focus);
+	activate_binding(pointer->seat, pointer->focus,
+			 WESTON_ACTIVATE_FLAG_CLICKED);
 }
 
 static void
@@ -1340,7 +1346,8 @@ touch_to_activate_binding(struct weston_touch *touch,
 	if (touch->focus == NULL)
 		return;
 
-	activate_binding(touch->seat, touch->focus);
+	activate_binding(touch->seat, touch->focus,
+			 WESTON_ACTIVATE_FLAG_NONE);
 }
 
 static void
