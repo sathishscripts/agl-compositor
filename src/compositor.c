@@ -876,14 +876,15 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 	int use_current_mode = 0;
 	int use_pixman = 0;
 	bool use_shadow;
+	bool without_input = false;
 	int ret;
 
 	const struct weston_option options[] = {
 		{ WESTON_OPTION_STRING, "seat", 0, &config.seat_id },
-		{ WESTON_OPTION_INTEGER, "tty", 0, &config.tty },
 		{ WESTON_OPTION_STRING, "drm-device", 0, &config.specific_device },
 		{ WESTON_OPTION_BOOLEAN, "current-mode", 0, &use_current_mode },
 		{ WESTON_OPTION_BOOLEAN, "use-pixman", 0, &use_pixman },
+		{ WESTON_OPTION_BOOLEAN, "continue-without-input", false, &without_input }
 	};
 
 	parse_options(options, ARRAY_LENGTH(options), argc, argv);
@@ -897,6 +898,9 @@ load_drm_backend(struct ivi_compositor *ivi, int *argc, char *argv[])
 				       &config.pageflip_timeout, 0);
 	weston_config_section_get_bool(section, "pixman-shadow", &use_shadow, 1);
 	config.use_pixman_shadow = use_shadow;
+
+	if (without_input)
+		ivi->compositor->require_input = !without_input;
 
 	ret = weston_compositor_load_backend(ivi->compositor, WESTON_BACKEND_DRM,
 					     &config.base);
