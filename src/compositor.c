@@ -86,7 +86,6 @@ handle_output_destroy(struct wl_listener *listener, void *data)
 		output->fullscreen_view.fs->view = NULL;
 	}
 
-	weston_layer_fini(&output->ivi->fullscreen);
 	output->output = NULL;
 	wl_list_remove(&output->output_destroy.link);
 }

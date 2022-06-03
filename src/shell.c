@@ -782,6 +782,8 @@ ivi_shell_destroy_views_on_layer(struct weston_layer *layer)
 void
 ivi_shell_finalize(struct ivi_compositor *ivi)
 {
+	struct ivi_output *output;
+
 	ivi_shell_destroy_views_on_layer(&ivi->hidden);
 	weston_layer_fini(&ivi->hidden);
 
@@ -796,6 +798,14 @@ ivi_shell_finalize(struct ivi_compositor *ivi)
 
 	ivi_shell_destroy_views_on_layer(&ivi->popup);
 	weston_layer_fini(&ivi->popup);
+
+	wl_list_for_each(output, &ivi->outputs, link) {
+		if (output->fullscreen_view.fs->view) {
+			weston_surface_destroy(output->fullscreen_view.fs->view->surface);
+			output->fullscreen_view.fs->view = NULL;
+		}
+	}
+	weston_layer_fini(&ivi->fullscreen);
 }
 
 static void
