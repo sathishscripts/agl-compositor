@@ -467,7 +467,7 @@ ivi_set_pending_desktop_surface_remote(struct ivi_output *ioutput,
 	if (!p_remote)
 		return;
 
-	wl_list_insert(&ivi->remote_pending_apps, &remote->link);
+	wl_list_insert(&ivi->remote_pending_apps, &p_remote->link);
 }
 
 
