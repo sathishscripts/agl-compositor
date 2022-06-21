@@ -275,6 +275,40 @@ ivi_layout_find_bg_output(struct ivi_compositor *ivi)
 	return NULL;
 }
 
+
+static void
+ivi_layout_add_to_hidden_layer(struct ivi_surface *surf,
+			       struct ivi_output *ivi_output)
+{
+	struct weston_desktop_surface *dsurf = surf->dsurface;
+	struct weston_view *ev = surf->view;
+	struct ivi_compositor *ivi = surf->ivi;
+	const char *app_id = weston_desktop_surface_get_app_id(dsurf);
+
+	weston_desktop_surface_set_maximized(dsurf, true);
+	weston_desktop_surface_set_size(dsurf,
+					ivi_output->area.width,
+					ivi_output->area.height);
+
+	weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
+			app_id, ivi_layout_get_surface_role_name(surf),
+			ivi_output->area.width, ivi_output->area.height);
+	/*
+	 * If the view isn't mapped, we put it onto the hidden layer so it will
+	 * start receiving frame events, and will be able to act on our
+	 * configure event.
+	 */
+	if (!weston_view_is_mapped(ev)) {
+		ev->is_mapped = true;
+		ev->surface->is_mapped = true;
+
+		weston_view_set_output(ev, ivi_output->output);
+		weston_layer_entry_insert(&ivi->hidden.view_list, &ev->layer_link);
+		weston_log("Placed app_id %s, type %s in hidden layer\n",
+				app_id, ivi_layout_get_surface_role_name(surf));
+	}
+}
+
 void
 ivi_layout_desktop_committed(struct ivi_surface *surf)
 {
@@ -336,6 +370,12 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		if (!surf->ivi->activate_by_default) {
 			weston_log("Refusing to activate surface role %d, app_id %s\n",
 					surf->role, app_id);
+
+			if (!weston_desktop_surface_get_maximized(dsurf) ||
+			    geom.width != r_output->area.width ||
+			    geom.height != r_output->area.height)
+				ivi_layout_add_to_hidden_layer(surf, r_output);
+
 			return;
 		}
 
@@ -739,12 +779,10 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 {
 	struct ivi_compositor *ivi = output->ivi;
 	struct weston_desktop_surface *dsurf;
-	struct weston_view *view;
 	struct weston_geometry geom;
 	struct ivi_policy *policy = output->ivi->policy;
 
 	dsurf = surf->dsurface;
-	view = surf->view;
 
 	const char *app_id = weston_desktop_surface_get_app_id(dsurf);
 
@@ -793,28 +831,7 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 		return;
 	}
 
-	weston_desktop_surface_set_maximized(dsurf, true);
-	weston_desktop_surface_set_size(dsurf,
-					output->area.width,
-					output->area.height);
-
-	weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
-			app_id, ivi_layout_get_surface_role_name(surf),
-			output->area.width, output->area.height);
-	/*
-	 * If the view isn't mapped, we put it onto the hidden layer so it will
-	 * start receiving frame events, and will be able to act on our
-	 * configure event.
-	 */
-	if (!weston_view_is_mapped(view)) {
-		view->is_mapped = true;
-		view->surface->is_mapped = true;
-
-		weston_view_set_output(view, output->output);
-		weston_layer_entry_insert(&ivi->hidden.view_list, &view->layer_link);
-		weston_log("Placed app_id %s, type %s in hidden layer\n",
-				app_id, ivi_layout_get_surface_role_name(surf));
-	}
+	ivi_layout_add_to_hidden_layer(surf, output);
 }
 
 void
