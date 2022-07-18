@@ -79,7 +79,7 @@ surfaces on the uppermost layer.
 
 Additional roles have been added, in a different extension, to add further
 functionality with the control/security functions being transferred over to a
-policy framework in case that is necessary. See [policy api][#policy] for
+policy framework in case that is necessary. See [policy api](#policy) for
 further details.
 
 ### agl-shell
