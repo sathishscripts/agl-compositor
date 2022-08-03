@@ -46,6 +46,11 @@ struct desktop_client {
 	struct wl_list link;	/* ivi_compositor::desktop_clients */
 };
 
+enum agl_shell_bound_status {
+	BOUND_OK,
+	BOUND_FAILED,
+};
+
 struct ivi_compositor {
 	struct weston_compositor *compositor;
 	struct weston_config *config;
@@ -81,6 +86,7 @@ struct ivi_compositor {
 		struct wl_client *client;
 		struct wl_resource *resource;
 		bool ready;
+		enum agl_shell_bound_status status;
 	} shell_client;
 
 	struct wl_list desktop_clients;	/* desktop_client::link */
