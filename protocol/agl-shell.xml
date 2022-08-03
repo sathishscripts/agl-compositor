@@ -22,7 +22,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
   </copyright>
-  <interface name="agl_shell" version="5">
+  <interface name="agl_shell" version="6">
     <description summary="user interface for Automotive Grade Linux platform">
       Starting with version 2 of the protocol, the client is required to wait
       for the 'bound_ok' or 'bound_fail' events in order to proceed further.
@@ -71,9 +71,18 @@
       <entry name="destroyed" value="3"/>
     </enum>
 
+    <enum name="split_orientation" since="6">
+      <entry name="none" value="0"/>
+      <entry name="top" value="1"/>
+      <entry name="bottom" value="2"/>
+      <entry name="left" value="3"/>
+      <entry name="right" value="4"/>
+    </enum>
+
     <enum name="app_role" since="4">
       <entry name="float" value="0"/>
       <entry name="remote" value="1"/>
+      <entry name="split" value="2" since="6"/>
     </enum>
 
     <request name="ready">
@@ -265,6 +274,42 @@
         the app_id client does its first commit.
       </description>
       <arg name="permanent" type="uint"/>
+    </request>
+
+    <request name="set_app_split" since="6">
+      <description summary="set the application split">
+        Request changes the application from the original mode (whatever that
+        might be) to a split, tiled orientation mode defined in the orientation
+        split_orientation enum. This request only handles a single level of
+        orientation for practical reasons.
+
+        If there's no app_id with the supplied name this request does nothing.
+
+        A none orientation type would make the window go back to the original
+        maximized mode. This implies that either the background surface will
+        displayed or in case there are more than one applications being
+        shown, the other application will be returned to the original,
+        maximized state.
+
+        The tiled orientation could be applied independently of each other,
+        such that a client can transition from one tiled orientation to
+        another. Any other window already present would switch places with
+        the currently one being changed.
+
+        In case there's already a client that's already active at that time,
+        it will be attributed automatically the opposite tiled orientation,
+        such that two concurrent applications can be displayed at the same
+        time.
+
+        The orientation tiles can not be combined, and only state at a time
+        can be active, which means we can't have a top left orientation, or
+        any combination like that.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="orientation" type="uint" enum="split_orientation"/>
     </request>
 
   </interface>
