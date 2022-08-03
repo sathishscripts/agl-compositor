@@ -1017,9 +1017,19 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	struct ivi_output *output;
 	struct ivi_surface *surface, *tmp;
 
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) {
+		wl_resource_post_error(shell_res,
+				       WL_DISPLAY_ERROR_INVALID_OBJECT,
+				       "agl_shell has already been bound. "
+				       "Check out bound_fail event");
+		return;
+	}
+
 	/* Init already finished. Do nothing */
 	if (ivi->shell_client.ready)
 		return;
+
 
 	ivi->shell_client.ready = true;
 
@@ -1047,8 +1057,18 @@ shell_set_background(struct wl_client *client,
 	struct weston_output *woutput = weston_head_get_output(head);
 	struct ivi_output *output = to_ivi_output(woutput);
 	struct weston_surface *wsurface = wl_resource_get_user_data(surface_res);
+	struct ivi_compositor *ivi = wl_resource_get_user_data(shell_res);
 	struct weston_desktop_surface *dsurface;
 	struct ivi_surface *surface;
+
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) {
+		wl_resource_post_error(shell_res,
+				       WL_DISPLAY_ERROR_INVALID_OBJECT,
+				       "agl_shell has already been bound. "
+				       "Check out bound_fail event");
+		return;
+	}
 
 	dsurface = weston_surface_get_desktop_surface(wsurface);
 	if (!dsurface) {
@@ -1098,10 +1118,20 @@ shell_set_panel(struct wl_client *client,
 	struct weston_output *woutput = weston_head_get_output(head);
 	struct ivi_output *output = to_ivi_output(woutput);
 	struct weston_surface *wsurface = wl_resource_get_user_data(surface_res);
+	struct ivi_compositor *ivi = wl_resource_get_user_data(shell_res);
 	struct weston_desktop_surface *dsurface;
 	struct ivi_surface *surface;
 	struct ivi_surface **member;
 	int32_t width = 0, height = 0;
+
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) {
+		wl_resource_post_error(shell_res,
+				       WL_DISPLAY_ERROR_INVALID_OBJECT,
+				       "agl_shell has already been bound. "
+				       "Check out bound_fail event");
+		return;
+	}
 
 	dsurface = weston_surface_get_desktop_surface(wsurface);
 	if (!dsurface) {
@@ -1208,7 +1238,17 @@ shell_activate_app(struct wl_client *client,
 {
 	struct weston_head *head = weston_head_from_resource(output_res);
 	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_compositor *ivi = wl_resource_get_user_data(shell_res);
 	struct ivi_output *output = to_ivi_output(woutput);
+
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) {
+		wl_resource_post_error(shell_res,
+				       WL_DISPLAY_ERROR_INVALID_OBJECT,
+				       "agl_shell has already been bound. "
+				       "Check out bound_fail event");
+		return;
+	}
 
 	ivi_layout_activate(output, app_id);
 }
@@ -1241,7 +1281,14 @@ shell_deactivate_app(struct wl_client *client,
 				  NULL, AGL_SHELL_DESKTOP_APP_STATE_DEACTIVATED);
 }
 
+/* stub, no usage for the time being */
+static void
+shell_destroy(struct wl_client *client, struct wl_resource *res)
+{
+}
+
 static const struct agl_shell_interface agl_shell_implementation = {
+	.destroy = shell_destroy,
 	.ready = shell_ready,
 	.set_background = shell_set_background,
 	.set_panel = shell_set_panel,
@@ -1334,6 +1381,11 @@ unbind_agl_shell(struct wl_resource *resource)
 	struct ivi_surface *surf, *surf_tmp;
 
 	ivi = wl_resource_get_user_data(resource);
+
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED)
+		return;
+
 	wl_list_for_each(output, &ivi->outputs, link) {
 		/* reset the active surf if there's one present */
 		if (output->active) {
@@ -1383,22 +1435,30 @@ bind_agl_shell(struct wl_client *client,
 		return;
 	}
 
-	resource = wl_resource_create(client, &agl_shell_interface,
-				      1, id);
+	resource = wl_resource_create(client, &agl_shell_interface, version, id);
 	if (!resource) {
 		wl_client_post_no_memory(client);
 		return;
 	}
 
 	if (ivi->shell_client.resource) {
-		wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
-				       "agl_shell has already been bound");
-		return;
+		if (wl_resource_get_version(resource) == 1) {
+			wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
+					       "agl_shell has already been bound");
+			return;
+		}
+
+		agl_shell_send_bound_fail(resource);
+		ivi->shell_client.status = BOUND_FAILED;
 	}
 
 	wl_resource_set_implementation(resource, &agl_shell_implementation,
 				       ivi, unbind_agl_shell);
 	ivi->shell_client.resource = resource;
+
+	if (ivi->shell_client.status == BOUND_OK &&
+	    wl_resource_get_version(resource) >= AGL_SHELL_BOUND_OK_SINCE_VERSION)
+		agl_shell_send_bound_ok(ivi->shell_client.resource);
 }
 
 static void
@@ -1457,7 +1517,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
 	ivi->agl_shell = wl_global_create(ivi->compositor->wl_display,
-					  &agl_shell_interface, 1,
+					  &agl_shell_interface, 2,
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");

@@ -164,6 +164,14 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 	dclient = weston_desktop_surface_get_client(dsurface);
 	client = weston_desktop_client_get_client(dclient);
 
+	if (ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) {
+		wl_client_post_implementation_error(client,
+				       "agl_shell has already been bound. "
+				       "Check out bound_fail event");
+		return;
+	}
+
 	surface = zalloc(sizeof *surface);
 	if (!surface) {
 		wl_client_post_no_memory(client);
@@ -250,10 +258,20 @@ desktop_surface_removed(struct weston_desktop_surface *dsurface, void *userdata)
 	struct weston_surface *wsurface =
 		weston_desktop_surface_get_surface(dsurface);
 	const char *app_id = NULL;
-	struct weston_seat *wseat = get_ivi_shell_weston_first_seat(surface->ivi);
-	struct ivi_shell_seat *ivi_seat = get_ivi_shell_seat(wseat);
+	struct weston_seat *wseat = NULL;
+	struct ivi_shell_seat *ivi_seat = NULL;
+	struct ivi_output *output = NULL;
 
-	struct ivi_output *output = ivi_layout_get_output_from_surface(surface);
+	/* we might not have a valid ivi_surface if _added failed due to
+	 * protocol errors */
+	if (!surface)
+		return;
+
+	wseat = get_ivi_shell_weston_first_seat(surface->ivi);
+	if (wseat)
+		ivi_seat = get_ivi_shell_seat(wseat);
+
+	output = ivi_layout_get_output_from_surface(surface);
 
 	wl_list_remove(&surface->listener_advertise_app.link);
 	surface->listener_advertise_app.notify = NULL;
