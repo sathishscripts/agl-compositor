@@ -22,7 +22,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
   </copyright>
-  <interface name="agl_shell" version="2">
+  <interface name="agl_shell" version="3">
     <description summary="user interface for Automotive Grade Linux platform">
       Starting with version 2 of the protocol, the client is required to wait
       for the 'bound_ok' or 'bound_fail' events in order to proceed further.
@@ -137,6 +137,22 @@
       </description>
       <arg name="app_id" type="string"/>
       <arg name="output" type="object" interface="wl_output"/>
+    </request>
+
+    <request name="deactivate_app" since="3">
+      <description summary="de-activate/hide window identified by app_id">
+        Ask the compositor to hide the toplevel window for window
+        management purposes. Depending on the window role, this request
+        will either display the previously active window (or the background
+        in case there's no previously active surface) or temporarily (or
+        until a 'activate_app' is called upon) hide the surface. All
+        the surfaces are identifiable by using the app_id, and no actions are
+        taken in case the app_id is not/was not present.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
     </request>
 
     <event name="bound_ok" since="2">
