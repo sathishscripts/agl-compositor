@@ -22,7 +22,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
   </copyright>
-  <interface name="agl_shell" version="4">
+  <interface name="agl_shell" version="5">
     <description summary="user interface for Automotive Grade Linux platform">
       Starting with version 2 of the protocol, the client is required to wait
       for the 'bound_ok' or 'bound_fail' events in order to proceed further.
@@ -191,6 +191,81 @@
       <arg name="state" type="uint" enum="app_state"/>
       <arg name="role" type="uint" enum="app_role"/>
     </event>
+
+    <request name="set_app_float" since="5">
+      <description summary="set the application floating">
+        The agl-shell protocol makes the windows by default maximized to the
+        output area, taking into consideration the panel sizes.
+
+        If certain client would want be behave like a pop-up type, always sticky
+        window, when switching between applications, it can use this request
+        to do so.
+
+        If the application, specified with the app_id string,
+        is not currently running, it will be added it to a pending list.
+
+        If, at a later point in time, that application does come up it will
+        apply the floating state to it. Note that once that happens, and a later
+        point in time that application is stopped, these changes will not apply
+        anymore. To keep a permanent state see also set_app_property_mode().
+
+        Another use-case is for applications that want to be started from the
+        beginning as floating, so they the client must call this request before
+        doing the initial wl_surface.commit().
+
+        Application can also transit from float to maximized and vice-versa
+        using this request or the set_app_unfloat to go back to an
+        initial maximized state.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+    </request>
+
+    <request name="set_app_unfloat" since="5">
+      <description summary="set the application back to maximized mode">
+        This undoes the effect of the 'set_app_float' request
+        in case the client wants to go from floating back to the maximized
+        state. If there's no app_id present this request will obviously do
+        nothing.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+    </request>
+
+    <request name="set_app_remote" since="5">
+      <description summary="set the application remoting on another output">
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
+
+    <request name="set_app_property_mode" since="5">
+      <description summary="Request to change the application properties lifetime">
+        Use this request to inform the compositor to maintain a pending state
+        for an app_id being set with set_app_float/set_app_remote request.
+
+        Any subsequent application matching that app_id would survive a
+        potential application destruction. Note that this request will
+        take effect globally on all applications.
+
+        To turn it on, or off, use the 'permanent' argument. Initially,
+        the compositor will have this option set to off. Note that it
+        doesn't matter the order of this request with respect to
+        set_app_property() request, as the changes will only take effect
+        when the application itself does the commit with an app_id set,
+        therefore the only requirement is to call this request before
+        the app_id client does its first commit.
+      </description>
+      <arg name="permanent" type="uint"/>
+    </request>
 
   </interface>
 </protocol>
