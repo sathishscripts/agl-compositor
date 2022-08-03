@@ -22,7 +22,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
   </copyright>
-  <interface name="agl_shell" version="3">
+  <interface name="agl_shell" version="4">
     <description summary="user interface for Automotive Grade Linux platform">
       Starting with version 2 of the protocol, the client is required to wait
       for the 'bound_ok' or 'bound_fail' events in order to proceed further.
@@ -62,6 +62,18 @@
       <entry name="bottom" value="1"/>
       <entry name="left" value="2"/>
       <entry name="right" value="3"/>
+    </enum>
+
+    <enum name="app_state" since="4">
+      <entry name="started" value="0"/>
+      <entry name="activated" value="1"/>
+      <entry name="deactivated" value="2"/>
+      <entry name="destroyed" value="3"/>
+    </enum>
+
+    <enum name="app_role" since="4">
+      <entry name="float" value="0"/>
+      <entry name="remote" value="1"/>
     </enum>
 
     <request name="ready">
@@ -169,6 +181,15 @@
         unsuccesfull. Clients are required to wait for this event for
         continuing further.
       </description>
+    </event>
+
+    <event name="app_state" since="4">
+      <description summary="event sent when application has suffered state modification">
+        Notifies application(s) when other application have suffered state modifications.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="state" type="uint" enum="app_state"/>
+      <arg name="role" type="uint" enum="app_role"/>
     </event>
 
   </interface>
