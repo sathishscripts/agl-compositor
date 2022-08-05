@@ -104,6 +104,8 @@ struct ivi_compositor {
 	struct wl_list split_pending_apps;
 	struct wl_list remote_pending_apps;
 
+	struct wl_list pending_apps;	/** pending_app::link */
+
 	struct wl_listener destroy_listener;
 
 	struct weston_layer hidden;
@@ -175,11 +177,24 @@ enum ivi_surface_role {
 	IVI_SURFACE_ROLE_SPLIT_V,
 	IVI_SURFACE_ROLE_SPLIT_H,
 	IVI_SURFACE_ROLE_REMOTE,
+	IVI_SURFACE_ROLE_TILE,
 };
 
 struct ivi_bounding_box {
 	int x; int y;
 	int width; int height;
+};
+
+struct pending_app {
+	struct ivi_output *ioutput;
+	enum ivi_surface_role role;
+	char *app_id;
+	struct wl_list link;	/** ivi_compositor::pending_apps */
+};
+
+struct pending_app_tile {
+	struct pending_app base;
+	uint32_t orientation;
 };
 
 struct pending_popup {
@@ -279,6 +294,8 @@ struct ivi_surface {
 		FULLSCREEN,
 		HIDDEN,
 	} state;
+
+	uint32_t orientation;
 
 	enum ivi_surface_role role;
 	union {

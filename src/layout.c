@@ -47,6 +47,7 @@ static const char *ivi_roles_as_string[] = {
 	[IVI_SURFACE_ROLE_SPLIT_V]	= "SPLIT_V",
 	[IVI_SURFACE_ROLE_FULLSCREEN]	= "FULLSCREEN",
 	[IVI_SURFACE_ROLE_REMOTE]	= "REMOTE",
+	[IVI_SURFACE_ROLE_TILE]		= "TILE",
 };
 
 const char *
@@ -205,6 +206,10 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	weston_view_set_position(view,
 				 woutput->x + output->area.x,
 				 woutput->y + output->area.y);
+
+	surf->orientation = AGL_SHELL_TILE_ORIENTATION_NONE;
+	weston_desktop_surface_set_orientation(surf->dsurface,
+					       surf->orientation);
 
 	view->is_mapped = true;
 	surf->mapped = true;
@@ -804,10 +809,16 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 		return;
 	}
 
+	/* reset tile to desktop to allow to resize correctly */
+	if (surf->role == IVI_SURFACE_ROLE_TILE && output->active == surf)
+		surf->role = IVI_SURFACE_ROLE_DESKTOP;
+
 	/* do not 're'-activate surfaces that are split or active */
-	if (surf == output->active ||
-	    ivi_layout_surface_is_split_or_fullscreen(surf))
+	if ((surf == output->active && surf->role != IVI_SURFACE_ROLE_DESKTOP) ||
+	    ivi_layout_surface_is_split_or_fullscreen(surf)) {
+		weston_log("Found split || fullscreen surface. Refusing to activate!\n");
 		return;
+	}
 
 	if (surf->role == IVI_SURFACE_ROLE_REMOTE) {
 		struct ivi_output *remote_output =
@@ -883,6 +894,8 @@ ivi_layout_get_output_from_surface(struct ivi_surface *surf)
 		break;
 	case IVI_SURFACE_ROLE_NONE:
 	default:
+		if (surf->view->output)
+			return to_ivi_output(surf->view->output);
 		break;
 	}
 

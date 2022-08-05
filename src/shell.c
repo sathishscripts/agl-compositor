@@ -38,6 +38,7 @@
 #include <libweston/config-parser.h>
 
 #include "shared/os-compatibility.h"
+#include "shared/helpers.h"
 
 #include "agl-shell-server-protocol.h"
 #include "agl-shell-desktop-server-protocol.h"
@@ -48,6 +49,13 @@
 
 static void
 create_black_surface_view(struct ivi_output *output);
+
+static void
+_ivi_set_shell_surface_split(struct ivi_surface *surface, struct ivi_output *output,
+			     uint32_t orientation, bool to_activate);
+
+static uint32_t
+reverse_orientation(uint32_t orientation);
 
 void
 agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
@@ -662,6 +670,25 @@ ivi_check_pending_surface_desktop(struct ivi_surface *surface,
 	*role = IVI_SURFACE_ROLE_DESKTOP;
 }
 
+struct pending_app *
+ivi_check_pending_app_type(struct ivi_surface *surface, enum ivi_surface_role role)
+{
+	struct pending_app *papp;
+	const char *app_id = NULL;
+
+	// get app id
+	app_id = weston_desktop_surface_get_app_id(surface->dsurface);
+
+	if (!app_id)
+		return NULL;
+
+	wl_list_for_each(papp, &surface->ivi->pending_apps, link) {
+		if (strcmp(app_id, papp->app_id) == 0 && papp->role == role)
+			return papp;
+	}
+
+	return NULL;
+}
 
 void
 ivi_check_pending_desktop_surface(struct ivi_surface *surface)
@@ -695,6 +722,34 @@ ivi_check_pending_desktop_surface(struct ivi_surface *surface)
 		ivi_layout_desktop_committed(surface);
 		return;
 	}
+
+	/* new way of doing it */
+	struct pending_app *papp =
+		ivi_check_pending_app_type(surface, IVI_SURFACE_ROLE_TILE);
+	if (papp) {
+		struct pending_app_tile *papp_tile =
+			container_of(papp, struct pending_app_tile, base);
+
+		// handle the currently active surface
+		if (papp->ioutput->active) {
+			_ivi_set_shell_surface_split(papp->ioutput->active, NULL,
+				reverse_orientation(papp_tile->orientation), false);
+		}
+
+		surface->role = IVI_SURFACE_ROLE_TILE;
+		wl_list_insert(&surface->ivi->surfaces, &surface->link);
+
+		_ivi_set_shell_surface_split(surface, papp->ioutput,
+					     papp_tile->orientation, true);
+
+		/* remove it from pending */
+		wl_list_remove(&papp->link);
+		free(papp->app_id);
+		free(papp);
+
+		return;
+	}
+
 
 	/* if we end up here means we have a regular desktop app and
 	 * try to activate it */
@@ -1287,12 +1342,210 @@ shell_destroy(struct wl_client *client, struct wl_resource *res)
 {
 }
 
+static void
+_ivi_set_pending_desktop_surface_split(struct wl_resource *output,
+				       const char *app_id, uint32_t orientation)
+{
+	weston_log("%s() added split surface for app_id '%s' with "
+		"orientation %d to pending\n", __func__, app_id, orientation);
+
+	struct weston_head *head = weston_head_from_resource(output);
+	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_output *ivi_output = to_ivi_output(woutput);
+
+	struct pending_app_tile *app_tile = zalloc(sizeof(*app_tile));
+
+	app_tile->base.app_id = strdup(app_id);
+	app_tile->base.ioutput = ivi_output;
+	app_tile->base.role = IVI_SURFACE_ROLE_TILE;
+
+	app_tile->orientation = orientation;
+	wl_list_insert(&ivi_output->ivi->pending_apps, &app_tile->base.link);
+}
+
+static uint32_t
+reverse_orientation(uint32_t orientation)
+{
+
+	switch (orientation) {
+	case AGL_SHELL_TILE_ORIENTATION_LEFT:
+		return AGL_SHELL_TILE_ORIENTATION_RIGHT;
+	break;
+	case AGL_SHELL_TILE_ORIENTATION_RIGHT:
+		return AGL_SHELL_TILE_ORIENTATION_LEFT;
+	break;
+	case AGL_SHELL_TILE_ORIENTATION_TOP:
+		return AGL_SHELL_TILE_ORIENTATION_BOTTOM;
+	break;
+	case AGL_SHELL_TILE_ORIENTATION_BOTTOM:
+		return AGL_SHELL_TILE_ORIENTATION_TOP;
+	break;
+	default:
+		return AGL_SHELL_TILE_ORIENTATION_NONE;
+	}
+}
+
+static void
+_ivi_set_shell_surface_split(struct ivi_surface *surface, struct ivi_output *ioutput,
+			     uint32_t orientation, bool to_activate)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	struct weston_geometry geom = {};
+	struct ivi_output *output = NULL;
+
+	int width, height;
+	int x, y;
+
+	geom = weston_desktop_surface_get_geometry(surface->dsurface);
+	output = ivi_layout_get_output_from_surface(surface);
+
+	if (!output)
+		output = ioutput;
+
+	width = output->area.width;
+	height = output->area.height;
+
+	switch (orientation) {
+	case AGL_SHELL_TILE_ORIENTATION_LEFT:
+	case AGL_SHELL_TILE_ORIENTATION_RIGHT:
+		width /= 2;
+	break;
+	case AGL_SHELL_TILE_ORIENTATION_TOP:
+	case AGL_SHELL_TILE_ORIENTATION_BOTTOM:
+		height /= 2;
+	break;
+	case AGL_SHELL_TILE_ORIENTATION_NONE:
+	break;
+	default:
+		/* nothing */
+		assert(!"Invalid orientation passed");
+
+	}
+
+	x = output->area.x - geom.x;
+	y = output->area.y - geom.y;
+
+	if (orientation == AGL_SHELL_TILE_ORIENTATION_RIGHT)
+		x += width;
+	else if (orientation == AGL_SHELL_TILE_ORIENTATION_BOTTOM)
+		y += height;
+
+	if (to_activate) {
+		struct weston_view *ev = surface->view;
+		struct ivi_shell_seat *ivi_seat = NULL;
+		struct weston_seat *wseat = get_ivi_shell_weston_first_seat(ivi);
+
+		if (wseat)
+			ivi_seat = get_ivi_shell_seat(wseat);
+
+		if (!weston_view_is_mapped(ev))
+			weston_view_update_transform(ev);
+		else
+			weston_layer_entry_remove(&ev->layer_link);
+
+
+		// mark view as mapped
+		ev->is_mapped = true;
+		ev->surface->is_mapped = true;
+		surface->mapped = true;
+
+		// update older/new active surface
+		output->previous_active = output->active;
+		output->active = surface;
+
+		// add to the layer and inflict damage
+		weston_view_set_output(ev, output->output);
+		weston_layer_entry_insert(&ivi->normal.view_list, &ev->layer_link);
+		weston_view_geometry_dirty(ev);
+		weston_surface_damage(ev->surface);
+
+		// handle input / keyboard
+		if (ivi_seat)
+			ivi_shell_activate_surface(surface, ivi_seat, WESTON_ACTIVATE_FLAG_NONE);
+	}
+
+	weston_view_set_position(surface->view, x, y);
+	weston_desktop_surface_set_size(surface->dsurface, width, height);
+	weston_desktop_surface_set_orientation(surface->dsurface, orientation);
+	surface->orientation = orientation;
+
+	weston_compositor_schedule_repaint(ivi->compositor);
+
+	weston_log("%s() Setting to x=%d, y=%d, width=%d, height=%d, orientation=%d\n",
+			__func__, x, y, width, height, orientation);
+
+}
+
+static int
+shell_ivi_surf_count_split_surfaces(struct ivi_compositor *ivi)
+{
+	int count = 0;
+	struct ivi_surface *surf;
+
+	wl_list_for_each(surf, &ivi->surfaces, link) {
+		if (surf->orientation > AGL_SHELL_TILE_ORIENTATION_NONE)
+			count++;
+	}
+
+	return count;
+}
+
+
+static
+void shell_set_app_split(struct wl_client *client, struct wl_resource *res,
+			 const char *app_id, uint32_t orientation,
+			 struct wl_resource *output_res)
+{
+	struct ivi_surface *surf;
+	struct ivi_compositor *ivi = wl_resource_get_user_data(res);
+
+	struct weston_head *head = weston_head_from_resource(output_res);
+	struct weston_output *woutput = weston_head_get_output(head);
+	struct ivi_output *output = to_ivi_output(woutput);
+
+	if (!app_id)
+		return;
+
+	if (shell_ivi_surf_count_split_surfaces(ivi) > 2) {
+		weston_log("Found more than two split surfaces in tile orientation.\n");
+		return;
+	}
+
+	/* add it as pending until */
+	surf = ivi_find_app(ivi, app_id);
+	if (!surf) {
+		_ivi_set_pending_desktop_surface_split(output_res, app_id, orientation);
+		return;
+	}
+
+	/* otherwise, take actions now */
+	weston_log("%s() added split surface for app_id '%s' with orientation %d\n",
+			__func__, app_id, orientation);
+
+	if (output->previous_active) {
+		struct weston_view *ev = output->previous_active->view;
+
+		ev->is_mapped = true;
+		ev->surface->is_mapped = true;
+		output->previous_active->mapped = true;
+
+		weston_view_update_transform(ev);
+		weston_view_set_output(ev, woutput);
+		weston_layer_entry_insert(&ivi->normal.view_list, &ev->layer_link);
+
+		_ivi_set_shell_surface_split(output->previous_active, NULL,
+					     reverse_orientation(orientation), false);
+	}
+	_ivi_set_shell_surface_split(surf, NULL, orientation, false);
+}
+
 static const struct agl_shell_interface agl_shell_implementation = {
 	.destroy = shell_destroy,
 	.ready = shell_ready,
 	.set_background = shell_set_background,
 	.set_panel = shell_set_panel,
 	.activate_app = shell_activate_app,
+	.set_app_split = shell_set_app_split,
 };
 
 static void
@@ -1520,7 +1773,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
 	ivi->agl_shell = wl_global_create(ivi->compositor->wl_display,
-					  &agl_shell_interface, 2,
+					  &agl_shell_interface, 3,
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");

@@ -22,7 +22,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
   </copyright>
-  <interface name="agl_shell" version="2">
+  <interface name="agl_shell" version="3">
     <description summary="user interface for Automotive Grade Linux platform">
       Starting with version 2 of the protocol, the client is required to wait
       for the 'bound_ok' or 'bound_fail' events in order to proceed further.
@@ -64,6 +64,15 @@
       <entry name="left" value="2"/>
       <entry name="right" value="3"/>
     </enum>
+
+    <enum name="tile_orientation" since="3">
+      <entry name="none" value="0"/>
+      <entry name="left" value="1"/>
+      <entry name="right" value="2"/>
+      <entry name="top" value="3"/>
+      <entry name="bottom" value="4"/>
+    </enum>
+
 
     <request name="ready">
       <description summary="client is ready to be shown">
@@ -155,6 +164,69 @@
         continuing further.
       </description>
     </event>
+
+    <request name="set_app_split" since="3">
+      <description summary="set the application split">
+        This requests asks the compositor to change the application from the
+        original mode (whatever that might be) to a split, tiled orientation
+        mode defined in the orientation enum.
+        Clients need to implement resizing (to handle xdg-shell configure
+        events) for this to work correctly.
+
+        This request only handles a single level of tiling for practical
+        reasons: to keep implementation simple and straight forward. The
+        compositor will ignore requests if there are already two windows
+        present. The client can verify this request succeed by checking the
+        xdg-shell configure event and with it, the states sent
+        by the compositor.
+
+        If there's no app_id with the supplied name, the compositor will add the app
+        to a pending list in order to be applied when an application gets
+        started, or if the application sets its application after the initial
+        wl_surface.commit request.
+        Applications can use this approach if they want to be started in a
+        tiled orientation position, before creating the xdg-shell toplevel role.
+
+
+        A none orientation type would make the window go back to the original
+        maximized mode. If two windows are side by side, returning one of them
+        back the original mode would mean the other one will be made hidden
+        and the one doing the request for the none orientation will become
+        the currently active window. A further activation, using activate_app
+        request for the other window would make that one active.
+
+        Closing the window in the tiled orientation state implies that either
+        the background surface will displayed, or in case there was another
+        applications being shown at that time, will make that application be
+        returned to the original, maximized state.
+
+        The tiled orientation could be applied independently of each other,
+        such that a client can transition from one tiled orientation to
+        another. Note that any other window already present would literally
+        take the opposite orientation with the one currently being changed. So
+        tiled orientation modification automatically implies a tile orientation
+        for any other application already present/active at that time.
+
+        In case there's already a client active at that time, it will be
+        attributed automatically the opposite tiled orientation, such that two
+        concurrent applications can be displayed at the same time.
+
+        The orientation tiles can not be combined, and only state at a time
+        can be active. Only horizontal and vertical tiling is possible. A
+        horizontal and vertical tile orientation simultaneously is not
+        possible.
+
+        Input focus is being delivered to the last started/activated window,
+        such that users can cycle between that one or the other, assumes there's
+        another window in the first place.
+
+        See xdg_toplevel.set_app_id from the xdg-shell protocol for a
+        description of app_id.
+      </description>
+      <arg name="app_id" type="string"/>
+      <arg name="orientation" type="uint" enum="tile_orientation"/>
+      <arg name="output" type="object" interface="wl_output"/>
+    </request>
 
   </interface>
 </protocol>

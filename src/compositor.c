@@ -1646,6 +1646,7 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 	wl_list_init(&ivi.split_pending_apps);
 	wl_list_init(&ivi.remote_pending_apps);
 	wl_list_init(&ivi.desktop_clients);
+	wl_list_init(&ivi.pending_apps);
 
 	/* Prevent any clients we spawn getting our stdin */
 	os_fd_set_cloexec(STDIN_FILENO);
