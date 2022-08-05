@@ -1287,12 +1287,44 @@ shell_destroy(struct wl_client *client, struct wl_resource *res)
 {
 }
 
+static void
+_ivi_set_pending_desktop_surface_split(struct wl_resource *output,
+				       const char *app_id, uint32_t orientation)
+{
+	weston_log("%s() added split surface for app_id '%s' with "
+		"orientation %d to pending\n", __func__, app_id, orientation);
+}
+
+static
+void shell_set_app_split(struct wl_client *client, struct wl_resource *res,
+			 const char *app_id, uint32_t orientation,
+			 struct wl_resource *output)
+{
+	struct ivi_surface *surf;
+	struct ivi_compositor *ivi = wl_resource_get_user_data(res);
+
+	if (!app_id)
+		return;
+
+	/* add it as pending until */
+	surf = ivi_find_app(ivi, app_id);
+	if (!surf) {
+		_ivi_set_pending_desktop_surface_split(output, app_id, orientation);
+		return;
+	}
+
+	/* otherwise, take actions now */
+	weston_log("%s() added split surface for app_id '%s' with orientation %d\n",
+			__func__, app_id, orientation);
+}
+
 static const struct agl_shell_interface agl_shell_implementation = {
 	.destroy = shell_destroy,
 	.ready = shell_ready,
 	.set_background = shell_set_background,
 	.set_panel = shell_set_panel,
 	.activate_app = shell_activate_app,
+	.set_app_split = shell_set_app_split,
 };
 
 static void
@@ -1517,7 +1549,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
 	ivi->agl_shell = wl_global_create(ivi->compositor->wl_display,
-					  &agl_shell_interface, 2,
+					  &agl_shell_interface, 3,
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");
