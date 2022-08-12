@@ -128,7 +128,8 @@ desktop_surface_added_configure(struct ivi_surface *surface,
 
 	ivi_check_pending_surface_desktop(surface, &role);
 	if ((role != IVI_SURFACE_ROLE_DESKTOP &&
-	     role != IVI_SURFACE_ROLE_FULLSCREEN) ||
+	     role != IVI_SURFACE_ROLE_FULLSCREEN &&
+	     role != IVI_SURFACE_ROLE_REMOTE) ||
 	     role == IVI_SURFACE_ROLE_NONE)
 		return;
 
