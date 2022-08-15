@@ -285,14 +285,6 @@ ivi_layout_add_to_hidden_layer(struct ivi_surface *surf,
 	struct ivi_compositor *ivi = surf->ivi;
 	const char *app_id = weston_desktop_surface_get_app_id(dsurf);
 
-	weston_desktop_surface_set_maximized(dsurf, true);
-	weston_desktop_surface_set_size(dsurf,
-					ivi_output->area.width,
-					ivi_output->area.height);
-
-	weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
-			app_id, ivi_layout_get_surface_role_name(surf),
-			ivi_output->area.width, ivi_output->area.height);
 	/*
 	 * If the view isn't mapped, we put it onto the hidden layer so it will
 	 * start receiving frame events, and will be able to act on our
@@ -301,6 +293,15 @@ ivi_layout_add_to_hidden_layer(struct ivi_surface *surf,
 	if (!weston_view_is_mapped(ev)) {
 		ev->is_mapped = true;
 		ev->surface->is_mapped = true;
+
+		weston_desktop_surface_set_maximized(dsurf, true);
+		weston_desktop_surface_set_size(dsurf,
+						ivi_output->area.width,
+						ivi_output->area.height);
+
+		weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
+				app_id, ivi_layout_get_surface_role_name(surf),
+				ivi_output->area.width, ivi_output->area.height);
 
 		weston_view_set_output(ev, ivi_output->output);
 		weston_layer_entry_insert(&ivi->hidden.view_list, &ev->layer_link);
