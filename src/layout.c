@@ -419,9 +419,11 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 			return;
 
 		if (app_id) {
-			weston_log("Surface with app_id %s, role %s activating by default\n",
-					weston_desktop_surface_get_app_id(surf->dsurface),
-					ivi_layout_get_surface_role_name(surf));
+			weston_log("Surface with app_id %s, role %s activating "
+				   "by default on output %s\n",
+				   weston_desktop_surface_get_app_id(surf->dsurface),
+				   ivi_layout_get_surface_role_name(surf),
+				   output->output->name);
 			ivi_layout_activate(output, app_id);
 		}
 		return;
@@ -796,8 +798,8 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 	}
 
 #ifdef AGL_COMP_DEBUG
-	weston_log("Activating app_id %s, type %s\n", app_id,
-			ivi_layout_get_surface_role_name(surf));
+	weston_log("Activating app_id %s, type %s, on output %s\n", app_id,
+			ivi_layout_get_surface_role_name(surf), output->output->name);
 #endif
 
 	if (surf->role == IVI_SURFACE_ROLE_POPUP) {
