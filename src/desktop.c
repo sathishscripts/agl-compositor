@@ -223,7 +223,10 @@ desktop_surface_added(struct weston_desktop_surface *dsurface, void *userdata)
 
 	if (output && ivi->shell_client.ready) {
 		struct ivi_output *ivi_output = to_ivi_output(output);
-		desktop_surface_added_configure(surface, ivi_output);
+		if (active_output)
+			desktop_surface_added_configure(surface, active_output);
+		else
+			desktop_surface_added_configure(surface, ivi_output);
 	}
 	/*
 	 * We delay creating "normal" desktop surfaces until later, to
