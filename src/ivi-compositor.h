@@ -262,6 +262,7 @@ struct ivi_surface {
 	struct weston_desktop_surface *dsurface;
 	struct weston_view *view;
 	struct ivi_output *hidden_layer_output;
+	struct ivi_output *current_completed_output;
 
 	struct wl_list link;
 	int focus_count;
@@ -416,10 +417,13 @@ struct ivi_output *
 ivi_layout_get_output_from_surface(struct ivi_surface *surf);
 
 void
-insert_black_surface(struct ivi_output *output);
+insert_black_curtain(struct ivi_output *output);
 
 void
-remove_black_surface(struct ivi_output *output);
+remove_black_curtain(struct ivi_output *output);
+
+bool
+output_has_black_curtain(struct ivi_output *output);
 
 const char *
 ivi_layout_get_surface_role_name(struct ivi_surface *surf);

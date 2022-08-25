@@ -47,7 +47,7 @@
 #endif
 
 static void
-create_black_surface_view(struct ivi_output *output);
+create_black_curtain_view(struct ivi_output *output);
 
 void
 agl_shell_desktop_advertise_application_id(struct ivi_compositor *ivi,
@@ -211,7 +211,7 @@ ivi_set_desktop_surface_remote(struct ivi_surface *surface)
 	 * just being added */
 	view = output->fullscreen_view.fs->view;
 	if (view->is_mapped || view->surface->is_mapped)
-		remove_black_surface(output);
+		remove_black_curtain(output);
 
 	if (output->type == OUTPUT_WALTHAM)
 		ivi_output_notify_waltham_plugin(surface);
@@ -708,8 +708,8 @@ ivi_shell_init_black_fs(struct ivi_compositor *ivi)
 	struct ivi_output *out;
 
 	wl_list_for_each(out, &ivi->outputs, link) {
-		create_black_surface_view(out);
-		insert_black_surface(out);
+		create_black_curtain_view(out);
+		insert_black_curtain(out);
 	}
 }
 
@@ -908,7 +908,7 @@ ivi_launch_shell_client(struct ivi_compositor *ivi)
 }
 
 static void
-destroy_black_view(struct wl_listener *listener, void *data)
+destroy_black_curtain_view(struct wl_listener *listener, void *data)
 {
 	struct fullscreen_view *fs =
 		wl_container_of(listener, fs, fs_destroy);
@@ -922,7 +922,7 @@ destroy_black_view(struct wl_listener *listener, void *data)
 
 
 static void
-create_black_surface_view(struct ivi_output *output)
+create_black_curtain_view(struct ivi_output *output)
 {
 	struct weston_surface *surface = NULL;
 	struct weston_view *view;
@@ -953,13 +953,21 @@ create_black_surface_view(struct ivi_output *output)
 	}
 	output->fullscreen_view.fs->view = view;
 
-	output->fullscreen_view.fs_destroy.notify = destroy_black_view;
+	output->fullscreen_view.fs_destroy.notify = destroy_black_curtain_view;
 	wl_signal_add(&woutput->destroy_signal,
 		      &output->fullscreen_view.fs_destroy);
 }
 
+bool
+output_has_black_curtain(struct ivi_output *output)
+{
+	return (output->fullscreen_view.fs->view &&
+		output->fullscreen_view.fs->view->is_mapped &&
+	        output->fullscreen_view.fs->view->surface->is_mapped);
+}
+
 void
-remove_black_surface(struct ivi_output *output)
+remove_black_curtain(struct ivi_output *output)
 {
 	struct weston_view *view;
 
@@ -981,10 +989,12 @@ remove_black_surface(struct ivi_output *output)
 	weston_view_update_transform(view);
 
 	weston_view_damage_below(view);
+
+	weston_log("Removed black curtain from output %s\n", output->output->name);
 }
 
 void
-insert_black_surface(struct ivi_output *output)
+insert_black_curtain(struct ivi_output *output)
 {
 	struct weston_view *view;
 
@@ -1008,6 +1018,8 @@ insert_black_surface(struct ivi_output *output)
 
 	weston_view_update_transform(view);
 	weston_view_damage_below(view);
+
+	weston_log("Added black curtain to output %s\n", output->output->name);
 }
 
 static void
@@ -1035,7 +1047,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 
 	wl_list_for_each(output, &ivi->outputs, link) {
 		if (output->background)
-			remove_black_surface(output);
+			remove_black_curtain(output);
 		ivi_layout_init(ivi, output);
 	}
 
@@ -1399,7 +1411,7 @@ unbind_agl_shell(struct wl_resource *resource)
 			output->active = NULL;
 		}
 
-		insert_black_surface(output);
+		insert_black_curtain(output);
 	}
 
 	wl_list_for_each_safe(surf, surf_tmp, &ivi->surfaces, link) {

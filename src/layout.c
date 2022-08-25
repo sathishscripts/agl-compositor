@@ -201,6 +201,28 @@ ivi_layout_activate_complete(struct ivi_output *output,
 		weston_view_update_transform(view);
 	}
 
+	if (output_has_black_curtain(output)) {
+		if (!output->background) {
+			weston_log("Found that we have no background surface "
+				    "for output %s. Using black curtain as background\n",
+				    output->output->name);
+
+			struct weston_view *ev =
+				output->fullscreen_view.fs->view;
+
+			/* use the black curtain as background when we have
+			 * none added by the shell client. */
+			weston_layer_entry_remove(&ev->layer_link);
+			weston_layer_entry_insert(&ivi->normal.view_list,
+						  &ev->layer_link);
+			weston_view_geometry_dirty(ev);
+			weston_surface_damage(ev->surface);
+		} else {
+			remove_black_curtain(output);
+		}
+	}
+
+
 	weston_view_set_output(view, woutput);
 	weston_view_set_position(view,
 				 woutput->x + output->area.x,
@@ -218,6 +240,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	}
 	output->previous_active = output->active;
 	output->active = surf;
+	surf->current_completed_output = output;
 
 	weston_layer_entry_insert(&ivi->normal.view_list, &view->layer_link);
 	weston_view_geometry_dirty(view);
@@ -383,7 +406,7 @@ ivi_layout_desktop_committed(struct ivi_surface *surf)
 		if (r_output) {
 			struct weston_view *view = r_output->fullscreen_view.fs->view;
 			if (view->is_mapped || view->surface->is_mapped)
-				remove_black_surface(r_output);
+				remove_black_curtain(r_output);
 		}
 
 
