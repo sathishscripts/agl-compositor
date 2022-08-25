@@ -261,6 +261,7 @@ struct ivi_surface {
 	struct ivi_compositor *ivi;
 	struct weston_desktop_surface *dsurface;
 	struct weston_view *view;
+	struct ivi_output *hidden_layer_output;
 
 	struct wl_list link;
 	int focus_count;

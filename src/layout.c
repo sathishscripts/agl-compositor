@@ -303,11 +303,43 @@ ivi_layout_add_to_hidden_layer(struct ivi_surface *surf,
 				app_id, ivi_layout_get_surface_role_name(surf),
 				ivi_output->area.width, ivi_output->area.height);
 
+		surf->hidden_layer_output = ivi_output;
 		weston_view_set_output(ev, ivi_output->output);
 		weston_layer_entry_insert(&ivi->hidden.view_list, &ev->layer_link);
-		weston_log("Placed app_id %s, type %s in hidden layer\n",
-				app_id, ivi_layout_get_surface_role_name(surf));
+		weston_log("Placed app_id %s, type %s in hidden layer on output %s\n",
+				app_id, ivi_layout_get_surface_role_name(surf),
+				ivi_output->output->name);
+
+		weston_compositor_schedule_repaint(ivi->compositor);
+		return;
 	}
+
+	/* we might have another output to activate */
+	if (surf->hidden_layer_output &&
+	    surf->hidden_layer_output != ivi_output) {
+		weston_layer_entry_remove(&ev->layer_link);
+
+		if (ivi_output->area.width != surf->hidden_layer_output->area.width &&
+		    ivi_output->area.height != surf->hidden_layer_output->area.height) {
+			weston_desktop_surface_set_maximized(dsurf, true);
+			weston_desktop_surface_set_size(dsurf,
+							ivi_output->area.width,
+							ivi_output->area.height);
+		}
+
+		weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
+				app_id, ivi_layout_get_surface_role_name(surf),
+				ivi_output->area.width, ivi_output->area.height);
+
+		surf->hidden_layer_output = ivi_output;
+		weston_view_set_output(ev, ivi_output->output);
+		weston_layer_entry_insert(&ivi->hidden.view_list, &ev->layer_link);
+		weston_log("Placed app_id %s, type %s in hidden layer on output %s\n",
+				app_id, ivi_layout_get_surface_role_name(surf),
+				ivi_output->output->name);
+	}
+
+	weston_compositor_schedule_repaint(ivi->compositor);
 }
 
 void
