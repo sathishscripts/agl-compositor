@@ -232,6 +232,26 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	surf->mapped = true;
 	view->surface->is_mapped = true;
 
+	/* handle a movement from one output to another */
+	if (surf->current_completed_output &&
+	    surf->current_completed_output != output) {
+
+		/* we're migrating the same surface but to another output */
+		if (surf->current_completed_output->active == surf) {
+			struct weston_view *ev =
+				surf->current_completed_output->active->view;
+
+			weston_layer_entry_remove(&ev->layer_link);
+			surf->current_completed_output->previous_active =
+				surf->current_completed_output->active;
+			surf->current_completed_output->active = NULL;
+
+			/* damage all possible outputs to avoid stale views */
+			weston_compositor_damage_all(ivi->compositor);
+		}
+	}
+
+
 	if (output->active) {
 		output->active->view->is_mapped = false;
 		output->active->view->surface->is_mapped = false;
@@ -864,8 +884,11 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 
 	/* do not 're'-activate surfaces that are split or active */
 	if (surf == output->active ||
-	    ivi_layout_surface_is_split_or_fullscreen(surf))
+	    ivi_layout_surface_is_split_or_fullscreen(surf)) {
+		weston_log("Application %s is already active on output %s\n",
+				app_id, output->output->name);
 		return;
+	}
 
 	if (surf->role == IVI_SURFACE_ROLE_REMOTE) {
 		struct ivi_output *remote_output =
