@@ -1052,10 +1052,19 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	}
 
 	wl_list_for_each_safe(surface, tmp, &ivi->pending_surfaces, link) {
+		const char *app_id;
+
 		wl_list_remove(&surface->link);
 		wl_list_init(&surface->link);
 		ivi_check_pending_desktop_surface(surface);
 		surface->checked_pending = true;
+		app_id = weston_desktop_surface_get_app_id(surface->dsurface);
+
+		if (app_id &&
+		    wl_resource_get_version(ivi->shell_client.resource) >=
+		    AGL_SHELL_APP_STATE_SINCE_VERSION)
+			agl_shell_send_app_state(ivi->shell_client.resource,
+						 app_id, AGL_SHELL_APP_STATE_STARTED);
 	}
 }
 
@@ -1532,7 +1541,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
 	ivi->agl_shell = wl_global_create(ivi->compositor->wl_display,
-					  &agl_shell_interface, 2,
+					  &agl_shell_interface, 3,
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");

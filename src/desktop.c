@@ -366,9 +366,14 @@ skip_output_asignment:
 	weston_log("Removed surface %p, app_id %s, role %s\n", surface,
 			app_id, ivi_layout_get_surface_role_name(surface));
 
-	if (app_id && output)
+	if (app_id && output) {
 		shell_advertise_app_state(output->ivi, app_id,
 					  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
+
+		if (wl_resource_get_version(output->ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
+			agl_shell_send_app_state(output->ivi->shell_client.resource,
+						 app_id, AGL_SHELL_APP_STATE_TERMINATED);
+	}
 
 	wl_list_remove(&surface->link);
 
@@ -396,6 +401,13 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		wl_list_init(&surface->link);
 		ivi_check_pending_desktop_surface(surface);
 		surface->checked_pending = true;
+
+		/* we'll do it now at commit time, because we might not have an
+		 * appid by the time we've created the weston_desktop_surface
+		 * */
+		if (wl_resource_get_version(ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
+			agl_shell_send_app_state(ivi->shell_client.resource,
+						 app_id, AGL_SHELL_APP_STATE_STARTED);
 	}
 
 	if (!surface->advertised_on_launch &&
