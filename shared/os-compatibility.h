@@ -69,4 +69,7 @@ os_ro_anonymous_file_get_fd(struct ro_anonymous_file *file,
 int
 os_ro_anonymous_file_put_fd(int fd);
 
+int
+os_fd_clear_cloexec(int fd);
+
 #endif /* OS_COMPATIBILITY_H */
