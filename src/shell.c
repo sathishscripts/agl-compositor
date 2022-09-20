@@ -33,6 +33,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <libweston/libweston.h>
 #include <libweston/config-parser.h>
@@ -927,6 +928,37 @@ struct process_info {
 	struct weston_process proc;
 	char *path;
 };
+
+int
+sigchld_handler(int signal_number, void *data)
+{
+	struct weston_process *p;
+	struct ivi_compositor *ivi = data;
+	int status;
+	pid_t pid;
+
+	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		wl_list_for_each(p, &ivi->child_process_list, link) {
+			if (p->pid == pid)
+				break;
+		}
+
+		if (&p->link == &ivi->child_process_list) {
+			weston_log("unknown child process exited\n");
+			continue;
+		}
+
+		wl_list_remove(&p->link);
+		wl_list_init(&p->link);
+		p->cleanup(p, status);
+	}
+
+	if (pid < 0 && errno != ECHILD)
+		weston_log("waitpid error %s\n", strerror(errno));
+
+	return 1;
+}
+
 
 static void
 process_handle_sigchld(struct weston_process *process, int status)

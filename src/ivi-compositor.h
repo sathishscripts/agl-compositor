@@ -480,5 +480,7 @@ void
 ivi_shell_activate_surface(struct ivi_surface *ivi_surf,
                           struct ivi_shell_seat *ivi_seat,
                           uint32_t flags);
+int
+sigchld_handler(int signal_number, void *data);
 
 #endif
