@@ -1608,7 +1608,7 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 	char *cmdline;
 	struct wl_display *display = NULL;
 	struct wl_event_loop *loop;
-	struct wl_event_source *signals[3] = { 0 };
+	struct wl_event_source *signals[2] = { 0 };
 	struct weston_config_section *section;
 	/* Command line options */
 	char *backend = NULL;
@@ -1708,8 +1708,6 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 	signals[0] = wl_event_loop_add_signal(loop, SIGTERM, on_term_signal,
 					      display);
 	signals[1] = wl_event_loop_add_signal(loop, SIGINT, on_term_signal,
-					      display);
-	signals[2] = wl_event_loop_add_signal(loop, SIGQUIT, on_term_signal,
 					      display);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(signals); ++i)
