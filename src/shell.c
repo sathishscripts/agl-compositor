@@ -37,7 +37,10 @@
 #include <libweston/libweston.h>
 #include <libweston/config-parser.h>
 
+#include <weston/weston.h>
 #include "shared/os-compatibility.h"
+#include "shared/helpers.h"
+#include "shared/process-util.h"
 
 #include "agl-shell-server-protocol.h"
 #include "agl-shell-desktop-server-protocol.h"
@@ -812,82 +815,148 @@ ivi_shell_advertise_xdg_surfaces(struct ivi_compositor *ivi, struct wl_resource 
 	}
 }
 
-static void
-client_exec(const char *command, int fd)
-{
-	sigset_t sig;
-	char s[32];
-
-	/* Don't give the child our signal mask */
-	sigfillset(&sig);
-	sigprocmask(SIG_UNBLOCK, &sig, NULL);
-
-	/* Launch clients as the user; don't give them the wrong euid */
-	if (seteuid(getuid()) == -1) {
-		weston_log("seteuid failed: %s\n", strerror(errno));
-		return;
-	}
-
-	/* Duplicate fd to unset the CLOEXEC flag. We don't need to worry about
-	 * clobbering fd, as we'll exit/exec either way.
-	 */
-	fd = dup(fd);
-	if (fd == -1) {
-		weston_log("dup failed: %s\n", strerror(errno));
-		return;
-	}
-
-	snprintf(s, sizeof s, "%d", fd);
-	setenv("WAYLAND_SOCKET", s, 1);
-
-	execl("/bin/sh", "/bin/sh", "-c", command, NULL);
-	weston_log("executing '%s' failed: %s", command, strerror(errno));
-}
-
 static struct wl_client *
-launch_shell_client(struct ivi_compositor *ivi, const char *command)
+client_launch(struct weston_compositor *compositor,
+		     struct weston_process *proc,
+		     const char *path,
+		     weston_process_cleanup_func_t cleanup)
 {
-	struct wl_client *client;
-	int sock[2];
+	struct wl_client *client = NULL;
+	struct custom_env child_env;
+	struct fdstr wayland_socket;
+	const char *fail_cloexec = "Couldn't unset CLOEXEC on client socket";
+	const char *fail_seteuid = "Couldn't call seteuid";
+	char *fail_exec;
+	char * const *argp;
+	char * const *envp;
+	sigset_t allsigs;
 	pid_t pid;
+	bool ret;
+	struct ivi_compositor *ivi;
+	size_t written __attribute__((unused));
 
-	weston_log("launching' %s'\n", command);
+	weston_log("launching '%s'\n", path);
+	str_printf(&fail_exec, "Error: Couldn't launch client '%s'\n", path);
 
-	if (os_socketpair_cloexec(AF_UNIX, SOCK_STREAM, 0, sock) < 0) {
-		weston_log("socketpair failed while launching '%s': %s\n",
-			   command, strerror(errno));
+	custom_env_init_from_environ(&child_env);
+	custom_env_add_from_exec_string(&child_env, path);
+
+	if (os_socketpair_cloexec(AF_UNIX, SOCK_STREAM, 0,
+				  wayland_socket.fds) < 0) {
+		weston_log("client_launch: "
+			   "socketpair failed while launching '%s': %s\n",
+			   path, strerror(errno));
+		custom_env_fini(&child_env);
 		return NULL;
 	}
+	fdstr_update_str1(&wayland_socket);
+	custom_env_set_env_var(&child_env, "WAYLAND_SOCKET",
+			       wayland_socket.str1);
+
+	argp = custom_env_get_argp(&child_env);
+	envp = custom_env_get_envp(&child_env);
 
 	pid = fork();
-	if (pid == -1) {
-		close(sock[0]);
-		close(sock[1]);
-		weston_log("fork failed while launching '%s': %s\n",
-			   command, strerror(errno));
-		return NULL;
+	switch (pid) {
+	case 0:
+		/* Put the client in a new session so it won't catch signals
+		 * intended for the parent. Sharing a session can be
+		 * confusing when launching weston under gdb, as the ctrl-c
+		 * intended for gdb will pass to the child, and weston
+		 * will cleanly shut down when the child exits.
+		 */
+		setsid();
+
+		/* do not give our signal mask to the new process */
+		sigfillset(&allsigs);
+		sigprocmask(SIG_UNBLOCK, &allsigs, NULL);
+
+		/* Launch clients as the user. Do not launch clients with wrong euid. */
+		if (seteuid(getuid()) == -1) {
+			written = write(STDERR_FILENO, fail_seteuid, strlen(fail_seteuid));
+			_exit(EXIT_FAILURE);
+		}
+
+		ret = fdstr_clear_cloexec_fd1(&wayland_socket);
+		if (!ret) {
+			written = write(STDERR_FILENO, fail_cloexec, strlen(fail_cloexec));
+			_exit(EXIT_FAILURE);
+		}
+
+		execve(argp[0], argp, envp);
+
+		if (fail_exec)
+			written = write(STDERR_FILENO, fail_exec, strlen(fail_exec));
+		_exit(EXIT_FAILURE);
+
+	default:
+		close(wayland_socket.fds[1]);
+		ivi = weston_compositor_get_user_data(compositor);
+		client = wl_client_create(compositor->wl_display,
+					  wayland_socket.fds[0]);
+		if (!client) {
+			custom_env_fini(&child_env);
+			close(wayland_socket.fds[0]);
+			free(fail_exec);
+			weston_log("client_launch: "
+				"wl_client_create failed while launching '%s'.\n",
+				path);
+			return NULL;
+		}
+
+		proc->pid = pid;
+		proc->cleanup = cleanup;
+		wl_list_insert(&ivi->child_process_list, &proc->link);
+		break;
+
+	case -1:
+		fdstr_close_all(&wayland_socket);
+		weston_log("client_launch: "
+			   "fork failed while launching '%s': %s\n", path,
+			   strerror(errno));
+		break;
 	}
 
-	if (pid == 0) {
-		client_exec(command, sock[1]);
-		_Exit(EXIT_FAILURE);
-	}
-	close(sock[1]);
-
-	client = wl_client_create(ivi->compositor->wl_display, sock[0]);
-	if (!client) {
-		close(sock[0]);
-		weston_log("Failed to create wayland client for '%s'",
-			   command);
-		return NULL;
-	}
+	custom_env_fini(&child_env);
+	free(fail_exec);
 
 	return client;
+}
+
+struct process_info {
+	struct weston_process proc;
+	char *path;
+};
+
+static void
+process_handle_sigchld(struct weston_process *process, int status)
+{
+	struct process_info *pinfo =
+		container_of(process, struct process_info, proc);
+
+	/*
+	 * There are no guarantees whether this runs before or after
+	 * the wl_client destructor.
+	 */
+
+	if (WIFEXITED(status)) {
+		weston_log("%s exited with status %d\n", pinfo->path,
+			   WEXITSTATUS(status));
+	} else if (WIFSIGNALED(status)) {
+		weston_log("%s died on signal %d\n", pinfo->path,
+			   WTERMSIG(status));
+	} else {
+		weston_log("%s disappeared\n", pinfo->path);
+	}
+
+	free(pinfo->path);
+	free(pinfo);
 }
 
 int
 ivi_launch_shell_client(struct ivi_compositor *ivi)
 {
+	struct process_info *pinfo;
 	struct weston_config_section *section;
 	char *command = NULL;
 
@@ -900,11 +969,28 @@ ivi_launch_shell_client(struct ivi_compositor *ivi)
 	if (!command)
 		return -1;
 
-	ivi->shell_client.client = launch_shell_client(ivi, command);
-	if (!ivi->shell_client.client)
+	pinfo = zalloc(sizeof *pinfo);
+	if (!pinfo)
 		return -1;
 
+	pinfo->path = strdup(command);
+	if (!pinfo->path)
+		goto out_free;
+
+	ivi->shell_client.client = client_launch(ivi->compositor, &pinfo->proc,
+						 command, process_handle_sigchld);
+	if (!ivi->shell_client.client)
+		goto out_str;
+
 	return 0;
+
+out_str:
+	free(pinfo->path);
+
+out_free:
+	free(pinfo);
+
+	return -1;
 }
 
 static void

@@ -171,6 +171,7 @@ srcs_agl_compositor = [
 	'src/input.c',
 	'shared/option-parser.c',
 	'shared/os-compatibility.c',
+	'shared/process-util.c',
 	agl_shell_server_protocol_h,
 	agl_shell_desktop_server_protocol_h,
 	agl_screenshooter_server_protocol_h,

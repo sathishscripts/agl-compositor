@@ -112,6 +112,8 @@ struct ivi_compositor {
 	struct weston_layer panel;
 	struct weston_layer popup;
 	struct weston_layer fullscreen;
+
+	struct wl_list child_process_list;
 };
 
 struct ivi_surface;
