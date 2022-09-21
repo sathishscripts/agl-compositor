@@ -74,6 +74,12 @@ to_ivi_compositor(struct weston_compositor *ec)
 }
 
 static void
+sigint_helper(int sig)
+{
+       raise(SIGUSR2);
+}
+
+static void
 handle_output_destroy(struct wl_listener *listener, void *data)
 {
 	struct ivi_output *output;
@@ -1625,6 +1631,7 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 	struct weston_log_subscriber *logger;
 	int ret = EXIT_FAILURE;
 	bool xwayland = false;
+	struct sigaction action;
 
 	const struct weston_option core_options[] = {
 		{ WESTON_OPTION_STRING, "backend", 'B', &backend },
@@ -1707,10 +1714,25 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 
 	signals[0] = wl_event_loop_add_signal(loop, SIGTERM, on_term_signal,
 					      display);
-	signals[1] = wl_event_loop_add_signal(loop, SIGINT, on_term_signal,
+	signals[1] = wl_event_loop_add_signal(loop, SIGUSR2, on_term_signal,
 					      display);
 	signals[2] = wl_event_loop_add_signal(loop, SIGCHLD, sigchld_handler,
 					      display);
+
+	/* When debugging the compositor, if use wl_event_loop_add_signal() to
+	 * catch SIGINT, the debugger can't catch it, and attempting to stop
+	 * the compositor from within the debugger results in weston exiting
+	 * cleanly.
+	 *
+	 * Instead, use the sigaction() function, which sets up the signal in a
+	 * way that gdb can successfully catch, but have the handler for SIGINT
+	 * send SIGUSR2 (xwayland uses SIGUSR1), which we catch via
+	 * wl_event_loop_add_signal().
+	 */
+	action.sa_handler = sigint_helper;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	sigaction(SIGINT, &action, NULL);
 
 	for (size_t i = 0; i < ARRAY_LENGTH(signals); ++i)
 		if (!signals[i])
