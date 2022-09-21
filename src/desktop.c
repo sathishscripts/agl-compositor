@@ -370,7 +370,9 @@ skip_output_asignment:
 		shell_advertise_app_state(output->ivi, app_id,
 					  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
 
-		if (wl_resource_get_version(output->ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
+		if (output->ivi->shell_client.ready &&
+		    wl_resource_get_version(output->ivi->shell_client.resource)
+		    >= AGL_SHELL_APP_STATE_SINCE_VERSION)
 			agl_shell_send_app_state(output->ivi->shell_client.resource,
 						 app_id, AGL_SHELL_APP_STATE_TERMINATED);
 	}
