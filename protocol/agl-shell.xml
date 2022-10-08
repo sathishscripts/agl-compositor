@@ -201,4 +201,58 @@
       <arg name="height" type="int" summary="height of rectangle"/>
     </request>
   </interface>
+
+  <interface name="agl_shell_ext" version="1">
+    <description summary="extended user interface for Automotive Grade Linux platform">
+      This interface allows another client bind to the agl_shell interface,
+      while there's another shell client already present.
+
+      The client should first bind to this interface and then inform the
+      compositor with the 'doas_shell_client' request and it wants to bind to
+      the agl_shell interface. The client is still expected, if using a new
+      version of the agl_shell interface, to wait for the 'bound_ok' and
+      'bound_fail' events before issueing any other requests/events.
+
+      Note that this interface has its limitations, and the compositor would
+      still refuse the act for 'set_panel' or 'set_background' requests
+      of the agl_shell interface if there's already a client that used them.
+
+      Any other requests or events should be delievered and handled as it would
+      a client bound to the agl_shell interface.
+    </description>
+
+    <enum name="doas_shell_client_status">
+      <entry name="success" value="0"/>
+      <entry name="failed" value="1"/>
+    </enum>
+
+    <request name="destroy" type="destructor">
+      <description summary="destroys the factory object">
+        Call the destructor once you're ready with agl_shell_ext interface.
+        This would reset the state and would make any requests made
+        on the agl_shell interface be terminated. The client would need 
+        to bind again the agl_shell_ext and issue a 'doas_shell_client'
+        request.
+      </description>
+    </request>
+
+    <request name="doas_shell_client">
+      <description summary="Informs the compositor it wants to bind to the
+      agl_shell interface">
+        Prior to binding to agl_shell interface, this request would inform
+        the compositor that it wants to gain access the agl_shell interface.
+        The client is expected to wait for 'doas_shell_client_done' event and 
+        check for a successful status before going further with binding to
+        the agl_shell interface.
+      </description>
+    </request>
+
+    <event name="doas_done">
+      <description summary="event sent as a reply to doas_shell_client">
+        The client should check the status event to verify that the
+        compositor was able to handle the request.
+      </description>
+      <arg name="status" type="uint" enum="doas_shell_client_status"/>
+    </event>
+  </interface>
 </protocol>

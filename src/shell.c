@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Collabora, Ltd.
+ * Copyright © 2019, 2022 Collabora, Ltd.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -1216,8 +1216,9 @@ shell_set_background(struct wl_client *client,
 	struct weston_desktop_surface *dsurface;
 	struct ivi_surface *surface;
 
-	if (ivi->shell_client.resource &&
-	    ivi->shell_client.status == BOUND_FAILED) {
+	if ((ivi->shell_client.resource &&
+	     ivi->shell_client.status == BOUND_FAILED) ||
+	     ivi->shell_client.resource_ext == shell_res) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound. "
@@ -1279,8 +1280,9 @@ shell_set_panel(struct wl_client *client,
 	struct ivi_surface **member;
 	int32_t width = 0, height = 0;
 
-	if (ivi->shell_client.resource &&
-	    ivi->shell_client.status == BOUND_FAILED) {
+	if ((ivi->shell_client.resource &&
+	    ivi->shell_client.status == BOUND_FAILED) ||
+	    ivi->shell_client.resource_ext == shell_res) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound. "
@@ -1461,6 +1463,21 @@ shell_set_activate_region(struct wl_client *client, struct wl_resource *res,
        ioutput->area_activation = area;
 }
 
+static void
+shell_ext_destroy(struct wl_client *client, struct wl_resource *res)
+{
+	wl_resource_destroy(res);
+}
+
+static void
+shell_ext_doas(struct wl_client *client, struct wl_resource *res)
+{
+	struct 	ivi_compositor *ivi = wl_resource_get_user_data(res);
+
+	ivi->shell_client_ext.doas_requested = true;
+	agl_shell_ext_send_doas_done(ivi->shell_client_ext.resource,
+				     AGL_SHELL_EXT_DOAS_SHELL_CLIENT_STATUS_SUCCESS);
+}
 
 static const struct agl_shell_interface agl_shell_implementation = {
 	.ready = shell_ready,
@@ -1469,6 +1486,11 @@ static const struct agl_shell_interface agl_shell_implementation = {
 	.activate_app = shell_activate_app,
 	.destroy = shell_destroy,
 	.set_activate_region = shell_set_activate_region
+};
+
+static const struct agl_shell_ext_interface agl_shell_ext_implementation = {
+	.destroy = shell_ext_destroy,
+	.doas_shell_client = shell_ext_doas,
 };
 
 static void
@@ -1597,6 +1619,14 @@ unbind_agl_shell(struct wl_resource *resource)
 }
 
 static void
+unbind_agl_shell_ext(struct wl_resource *resource)
+{
+	struct ivi_compositor *ivi = wl_resource_get_user_data(resource);
+
+	ivi->shell_client_ext.resource = NULL;
+}
+
+static void
 bind_agl_shell(struct wl_client *client,
 	       void *data, uint32_t version, uint32_t id)
 {
@@ -1627,8 +1657,25 @@ bind_agl_shell(struct wl_client *client,
 			return;
 		}
 
-		agl_shell_send_bound_fail(resource);
-		ivi->shell_client.status = BOUND_FAILED;
+		if (ivi->shell_client_ext.resource && 
+		    ivi->shell_client_ext.doas_requested) {
+
+			wl_resource_set_implementation(resource, &agl_shell_implementation,
+						       ivi, NULL);
+			ivi->shell_client_ext.resource = resource;
+
+			if (ivi->shell_client.status == BOUND_OK &&
+			    wl_resource_get_version(resource) >= AGL_SHELL_BOUND_OK_SINCE_VERSION) {
+				weston_log("Sent agl_shell_send_bound_ok to client ext\n");
+				ivi->shell_client_ext.status = BOUND_OK;
+				agl_shell_send_bound_ok(ivi->shell_client_ext.resource);
+			}
+
+			return;
+		} else {
+			agl_shell_send_bound_fail(resource);
+			ivi->shell_client.status = BOUND_FAILED;
+		}
 	}
 
 	wl_resource_set_implementation(resource, &agl_shell_implementation,
@@ -1638,6 +1685,30 @@ bind_agl_shell(struct wl_client *client,
 	if (ivi->shell_client.status == BOUND_OK &&
 	    wl_resource_get_version(resource) >= AGL_SHELL_BOUND_OK_SINCE_VERSION)
 		agl_shell_send_bound_ok(ivi->shell_client.resource);
+}
+
+static void
+bind_agl_shell_ext(struct wl_client *client,
+		   void *data, uint32_t version, uint32_t id)
+{
+	struct ivi_compositor *ivi = data;
+	struct wl_resource *resource;
+
+	resource = wl_resource_create(client, &agl_shell_ext_interface, version, id);
+	if (!resource) {
+		wl_client_post_no_memory(client);
+		return;
+	}
+
+	if (ivi->shell_client_ext.resource) {
+		wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
+				       "agl_shell_ext has already been bound");
+		return;
+	}
+
+	wl_resource_set_implementation(resource, &agl_shell_ext_implementation,
+				       ivi, unbind_agl_shell_ext);
+	ivi->shell_client_ext.resource = resource;
 }
 
 static void
@@ -1700,6 +1771,14 @@ ivi_shell_create_global(struct ivi_compositor *ivi)
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");
+		return -1;
+	}
+
+	ivi->agl_shell_ext = wl_global_create(ivi->compositor->wl_display,
+					      &agl_shell_ext_interface, 1,
+					      ivi, bind_agl_shell_ext);
+	if (!ivi->agl_shell_ext) {
+		weston_log("Failed to create agl_shell_ext global.\n");
 		return -1;
 	}
 

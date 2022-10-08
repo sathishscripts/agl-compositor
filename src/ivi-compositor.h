@@ -81,13 +81,23 @@ struct ivi_compositor {
 
 	struct wl_global *agl_shell;
 	struct wl_global *agl_shell_desktop;
+	struct wl_global *agl_shell_ext;
 
 	struct {
 		struct wl_client *client;
 		struct wl_resource *resource;
+
+		struct wl_client *client_ext;
+		struct wl_resource *resource_ext;
 		bool ready;
 		enum agl_shell_bound_status status;
 	} shell_client;
+
+	struct {
+		struct wl_resource *resource;
+		bool doas_requested;
+		enum agl_shell_bound_status status;
+	} shell_client_ext;
 
 	struct wl_list desktop_clients;	/* desktop_client::link */
 
