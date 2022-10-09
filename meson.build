@@ -6,7 +6,7 @@ project('agl-compositor',
     'c_std=gnu99',
     'werror=true',
   ],
-  meson_version: '>= 0.53',
+  meson_version: '>= 0.60',
   license: 'MIT/Expat',
 )
 
