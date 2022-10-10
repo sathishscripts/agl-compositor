@@ -1816,7 +1816,12 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 	weston_compositor_wake(ivi.compositor);
 
 	ivi_shell_create_global(&ivi);
-	ivi_launch_shell_client(&ivi);
+
+	ivi_launch_shell_client(&ivi, "shell-client",
+				&ivi.shell_client.client);
+	ivi_launch_shell_client(&ivi, "shell-client-ext",
+				&ivi.shell_client_ext.client);
+
 	if (debug)
 		ivi_screenshooter_create(&ivi);
 	ivi_agl_systemd_notify(&ivi);
