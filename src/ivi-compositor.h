@@ -94,6 +94,7 @@ struct ivi_compositor {
 	} shell_client;
 
 	struct {
+		struct wl_client *client;
 		struct wl_resource *resource;
 		bool doas_requested;
 		enum agl_shell_bound_status status;
@@ -361,7 +362,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi);
 
 int
-ivi_launch_shell_client(struct ivi_compositor *ivi);
+ivi_launch_shell_client(struct ivi_compositor *ivi, const char *cmd_section, struct wl_client **client);
 
 int
 ivi_desktop_init(struct ivi_compositor *ivi);

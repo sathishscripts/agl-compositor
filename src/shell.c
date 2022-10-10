@@ -996,17 +996,16 @@ process_handle_sigchld(struct weston_process *process, int status)
 }
 
 int
-ivi_launch_shell_client(struct ivi_compositor *ivi)
+ivi_launch_shell_client(struct ivi_compositor *ivi, const char *cmd_section,
+			struct wl_client **client)
 {
 	struct process_info *pinfo;
 	struct weston_config_section *section;
 	char *command = NULL;
 
-	section = weston_config_get_section(ivi->config, "shell-client",
-					    NULL, NULL);
+	section = weston_config_get_section(ivi->config, cmd_section, NULL, NULL);
 	if (section)
-		weston_config_section_get_string(section, "command",
-						 &command, NULL);
+		weston_config_section_get_string(section, "command", &command, NULL);
 
 	if (!command)
 		return -1;
@@ -1019,9 +1018,8 @@ ivi_launch_shell_client(struct ivi_compositor *ivi)
 	if (!pinfo->path)
 		goto out_free;
 
-	ivi->shell_client.client = client_launch(ivi->compositor, &pinfo->proc,
-						 command, process_handle_sigchld);
-	if (!ivi->shell_client.client)
+	*client = client_launch(ivi->compositor, &pinfo->proc, command, process_handle_sigchld);
+	if (!*client)
 		goto out_str;
 
 	return 0;
