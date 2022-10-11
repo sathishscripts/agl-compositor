@@ -151,17 +151,40 @@ ivi_panel_init(struct ivi_compositor *ivi, struct ivi_output *output,
 void
 ivi_layout_init(struct ivi_compositor *ivi, struct ivi_output *output)
 {
+	bool use_default_area = true;
+
 	ivi_background_init(ivi, output);
 
-	output->area.x = 0;
-	output->area.y = 0;
-	output->area.width = output->output->width;
-	output->area.height = output->output->height;
+	if (output->area_activation.width ||
+	    output->area_activation.height ||
+	    output->area_activation.x ||
+	    output->area_activation.y) {
+		/* Sanity check target area is within output bounds */
+		if ((output->area_activation.x + output->area_activation.width) < output->output->width ||
+		    (output->area_activation.y + output->area_activation.height) < output->output->height) {
+			weston_log("Using specified area for output %s, ignoring panels\n",
+				   output->name);
+			output->area.x = output->area_activation.x;
+			output->area.y = output->area_activation.y;
+			output->area.width = output->area_activation.width;
+			output->area.height = output->area_activation.height;
+			use_default_area = false;
+		} else {
+			weston_log("Invalid activation-area position for output %s, ignoring\n",
+				   output->name);
+		}
+	}
+	if (use_default_area) {
+		output->area.x = 0;
+		output->area.y = 0;
+		output->area.width = output->output->width;
+		output->area.height = output->output->height;
 
-	ivi_panel_init(ivi, output, output->top);
-	ivi_panel_init(ivi, output, output->bottom);
-	ivi_panel_init(ivi, output, output->left);
-	ivi_panel_init(ivi, output, output->right);
+		ivi_panel_init(ivi, output, output->top);
+		ivi_panel_init(ivi, output, output->bottom);
+		ivi_panel_init(ivi, output, output->left);
+		ivi_panel_init(ivi, output, output->right);
+	}
 
 	weston_compositor_schedule_repaint(ivi->compositor);
 
@@ -349,8 +372,8 @@ ivi_layout_add_to_hidden_layer(struct ivi_surface *surf,
 						ivi_output->area.height);
 
 		weston_log("Setting app_id %s, role %s, set to maximized (%dx%d)\n",
-				app_id, ivi_layout_get_surface_role_name(surf),
-				ivi_output->area.width, ivi_output->area.height);
+			   app_id, ivi_layout_get_surface_role_name(surf),
+			   ivi_output->area.width, ivi_output->area.height);
 
 		surf->hidden_layer_output = ivi_output;
 		weston_view_set_output(ev, ivi_output->output);
