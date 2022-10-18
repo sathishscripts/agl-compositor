@@ -369,12 +369,8 @@ skip_output_asignment:
 	if (app_id && output) {
 		shell_advertise_app_state(output->ivi, app_id,
 					  NULL, AGL_SHELL_DESKTOP_APP_STATE_DESTROYED);
-
-		if (output->ivi->shell_client.ready &&
-		    wl_resource_get_version(output->ivi->shell_client.resource)
-		    >= AGL_SHELL_APP_STATE_SINCE_VERSION)
-			agl_shell_send_app_state(output->ivi->shell_client.resource,
-						 app_id, AGL_SHELL_APP_STATE_TERMINATED);
+		if (output->ivi->shell_client.ready)
+			shell_send_app_state(output->ivi, app_id, AGL_SHELL_APP_STATE_TERMINATED);
 	}
 
 	wl_list_remove(&surface->link);
@@ -407,9 +403,7 @@ desktop_committed(struct weston_desktop_surface *dsurface,
 		/* we'll do it now at commit time, because we might not have an
 		 * appid by the time we've created the weston_desktop_surface
 		 * */
-		if (wl_resource_get_version(ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
-			agl_shell_send_app_state(ivi->shell_client.resource,
-						 app_id, AGL_SHELL_APP_STATE_STARTED);
+		shell_send_app_state(ivi, app_id, AGL_SHELL_APP_STATE_STARTED);
 	}
 
 	if (!surface->advertised_on_launch &&

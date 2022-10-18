@@ -1148,6 +1148,22 @@ insert_black_curtain(struct ivi_output *output)
 	weston_log("Added black curtain to output %s\n", output->output->name);
 }
 
+void
+shell_send_app_state(struct ivi_compositor *ivi, const char *app_id,
+		     enum agl_shell_app_state state)
+{
+	if (app_id && wl_resource_get_version(ivi->shell_client.resource) >=
+	    AGL_SHELL_APP_STATE_SINCE_VERSION) {
+
+		agl_shell_send_app_state(ivi->shell_client.resource,
+					 app_id, state);
+
+		if (ivi->shell_client.resource_ext)
+			agl_shell_send_app_state(ivi->shell_client.resource_ext,
+						 app_id, state);
+	}
+}
+
 static void
 shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 {
@@ -1192,11 +1208,7 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 		surface->checked_pending = true;
 		app_id = weston_desktop_surface_get_app_id(surface->dsurface);
 
-		if (app_id &&
-		    wl_resource_get_version(ivi->shell_client.resource) >=
-		    AGL_SHELL_APP_STATE_SINCE_VERSION)
-			agl_shell_send_app_state(ivi->shell_client.resource,
-						 app_id, AGL_SHELL_APP_STATE_STARTED);
+		shell_send_app_state(ivi, app_id, AGL_SHELL_APP_STATE_STARTED);
 	}
 }
 
@@ -1660,13 +1672,13 @@ bind_agl_shell(struct wl_client *client,
 
 			wl_resource_set_implementation(resource, &agl_shell_implementation,
 						       ivi, NULL);
-			ivi->shell_client_ext.resource = resource;
+			ivi->shell_client.resource_ext = resource;
 
 			if (ivi->shell_client.status == BOUND_OK &&
 			    wl_resource_get_version(resource) >= AGL_SHELL_BOUND_OK_SINCE_VERSION) {
-				weston_log("Sent agl_shell_send_bound_ok to client ext\n");
 				ivi->shell_client_ext.status = BOUND_OK;
-				agl_shell_send_bound_ok(ivi->shell_client_ext.resource);
+				agl_shell_send_bound_ok(ivi->shell_client.resource_ext);
+				weston_log("agl_shell_send_bound_ok to client ext\n");
 			}
 
 			return;

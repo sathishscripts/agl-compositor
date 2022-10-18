@@ -87,7 +87,8 @@ struct ivi_compositor {
 		struct wl_client *client;
 		struct wl_resource *resource;
 
-		struct wl_client *client_ext;
+		/* this is for another agl-shell client, potentially used by
+		 * the grpc-proxy */
 		struct wl_resource *resource_ext;
 		bool ready;
 		enum agl_shell_bound_status status;
@@ -497,5 +498,9 @@ ivi_shell_activate_surface(struct ivi_surface *ivi_surf,
                           uint32_t flags);
 int
 sigchld_handler(int signal_number, void *data);
+
+void
+shell_send_app_state(struct ivi_compositor *ivi, const char *app_id,
+		     enum agl_shell_app_state state);
 
 #endif
