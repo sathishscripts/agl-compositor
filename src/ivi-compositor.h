@@ -498,4 +498,8 @@ ivi_shell_activate_surface(struct ivi_surface *ivi_surf,
 int
 sigchld_handler(int signal_number, void *data);
 
+void
+shell_send_app_state(struct ivi_compositor *ivi, const char *app_id,
+		     enum agl_shell_app_state state);
+
 #endif

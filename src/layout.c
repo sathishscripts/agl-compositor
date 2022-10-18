@@ -308,10 +308,7 @@ ivi_layout_activate_complete(struct ivi_output *output,
 			app_id,
 			ivi_layout_get_surface_role_name(surf), output->name);
 
-      if (wl_resource_get_version(ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
-		agl_shell_send_app_state(ivi->shell_client.resource,
-					 app_id, AGL_SHELL_APP_STATE_ACTIVATED);
-
+	shell_send_app_state(ivi, app_id, AGL_SHELL_APP_STATE_ACTIVATED);
 }
 
 struct ivi_output *
@@ -1061,7 +1058,5 @@ ivi_layout_deactivate(struct ivi_compositor *ivi, const char *app_id)
 		weston_surface_damage(view->surface);
 	}
 
-      if (wl_resource_get_version(ivi->shell_client.resource) >= AGL_SHELL_APP_STATE_SINCE_VERSION)
-	      agl_shell_send_app_state(ivi->shell_client.resource, app_id,
-				       AGL_SHELL_APP_STATE_DEACTIVATED);
+      shell_send_app_state(ivi, app_id, AGL_SHELL_APP_STATE_DEACTIVATED);
 }
