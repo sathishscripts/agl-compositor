@@ -86,8 +86,6 @@ struct ivi_compositor {
 	struct {
 		struct wl_client *client;
 		struct wl_resource *resource;
-
-		struct wl_client *client_ext;
 		struct wl_resource *resource_ext;
 		bool ready;
 		enum agl_shell_bound_status status;

@@ -1145,12 +1145,16 @@ shell_send_app_state(struct ivi_compositor *ivi, const char *app_id,
 	if (app_id && wl_resource_get_version(ivi->shell_client.resource) >=
 	    AGL_SHELL_APP_STATE_SINCE_VERSION) {
 
+		weston_log("%s() should sent app_state\n", __func__);
 		agl_shell_send_app_state(ivi->shell_client.resource,
 					 app_id, state);
 
-		if (ivi->shell_client_ext.resource)
-			agl_shell_send_app_state(ivi->shell_client_ext.resource,
+		if (ivi->shell_client.resource_ext) {
+			weston_log("%s() 2. should sent app_state %p\n", 
+					__func__, ivi->shell_client.resource_ext);
+			agl_shell_send_app_state(ivi->shell_client.resource_ext,
 						 app_id, state);
+		}
 	}
 }
 
@@ -1634,13 +1638,13 @@ bind_agl_shell(struct wl_client *client,
 
 			wl_resource_set_implementation(resource, &agl_shell_implementation,
 						       ivi, NULL);
-			ivi->shell_client_ext.resource = resource;
+			ivi->shell_client.resource_ext = resource;
 
 			if (ivi->shell_client.status == BOUND_OK &&
 			    wl_resource_get_version(resource) >= AGL_SHELL_BOUND_OK_SINCE_VERSION) {
-				weston_log("Sent agl_shell_send_bound_ok to client ext\n");
 				ivi->shell_client_ext.status = BOUND_OK;
-				agl_shell_send_bound_ok(ivi->shell_client_ext.resource);
+				agl_shell_send_bound_ok(ivi->shell_client.resource_ext);
+				weston_log("Sent agl_shell_send_bound_ok to client ext %p\n", ivi->shell_client.resource_ext);
 			}
 
 			return;

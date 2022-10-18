@@ -3,10 +3,11 @@ import "google/protobuf/empty.proto";
 package agl_shell_ipc;
 
 service AglShellManagerService {
-       rpc ActivateApp(ActivateRequest)        returns (google.protobuf.Empty) {}
-       rpc DeactivateApp(DeactivateRequest)    returns (google.protobuf.Empty) {}
-       rpc SetAppSplit(SplitRequest)           returns (google.protobuf.Empty) {}
-       rpc SetAppFloat(FloatRequest)           returns (google.protobuf.Empty) {}
+       rpc ActivateApp(ActivateRequest)			returns (google.protobuf.Empty) {}
+       rpc DeactivateApp(DeactivateRequest)		returns (google.protobuf.Empty) {}
+       rpc SetAppSplit(SplitRequest)			returns (google.protobuf.Empty) {}
+       rpc SetAppFloat(FloatRequest)			returns (google.protobuf.Empty) {}
+       rpc AppStatusState(google.protobuf.Empty) 	returns (stream AppState) {}
 }
 
 message ActivateRequest {
@@ -27,3 +28,7 @@ message FloatRequest {
        string app_id = 1;
 }
 
+message AppState {
+	int32 state = 1;
+	string app_id = 2;
+}

@@ -46,7 +46,9 @@ clients = [
 {
     'basename': 'agl-shell-grpc-server',
     'sources': [
-      'grpc.cpp',
+      'main-grpc.cpp',
+      'grpc-async-cb.cpp',
+      'shell.cpp',
       generated_protoc_sources,
       generated_grpc_sources,
       agl_shell_client_protocol_h,
