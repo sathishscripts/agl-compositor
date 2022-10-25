@@ -147,6 +147,10 @@ struct ivi_output {
 	 */
 	struct weston_geometry area;
 	struct weston_geometry area_saved;
+	/*
+	 * Potential user-specified non-default activation area
+	 */
+	struct weston_geometry area_activation;
 
 	struct ivi_surface *active;
 	struct ivi_surface *previous_active;

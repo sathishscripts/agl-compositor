@@ -322,6 +322,23 @@ parse_transform(const char *transform, uint32_t *out)
 }
 
 static int
+parse_activation_area(const char *geometry, struct ivi_output *output)
+{
+	int n;
+	unsigned width, height, x, y;
+
+	n = sscanf(geometry, "%ux%u+%u,%u", &width, &height, &x, &y);
+	if (n != 4) {
+		return -1;
+	}
+	output->area_activation.width = width;
+	output->area_activation.height = height;
+	output->area_activation.x = x;
+	output->area_activation.y = y;
+	return 0;
+}
+
+static int
 configure_output(struct ivi_output *output)
 {
 	struct ivi_compositor *ivi = output->ivi;
@@ -343,6 +360,10 @@ configure_output(struct ivi_output *output)
 		weston_config_section_get_string(section, "transform", &t, "normal");
 		if (parse_transform(t, &transform) < 0)
 			weston_log("Invalid transform \"%s\" for output %s\n",
+				   t, output->name);
+		weston_config_section_get_string(section, "activation-area", &t, "");
+		if (parse_activation_area(t, output) < 0)
+			weston_log("Invalid activation-area \"%s\" for output %s\n",
 				   t, output->name);
 		free(t);
 	}
