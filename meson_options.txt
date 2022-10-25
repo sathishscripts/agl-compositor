@@ -5,3 +5,10 @@ option(
 	value: 'allow-all',
 	description: 'Default policy when no specific policy was set'
 )
+
+option(
+        'grpc-proxy',
+        type: 'boolean',
+        value: true,
+        description: 'Build gRPC proxy which exposes some of the agl-shell protocol over a gRPC API'
+)

@@ -296,3 +296,7 @@ install_data(
 
 common_inc = [ include_directories('src'), include_directories('.') ]
 subdir('clients')
+
+if get_option('grpc-proxy')
+  subdir('grpc-proxy')
+endif
