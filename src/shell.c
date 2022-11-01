@@ -1426,12 +1426,33 @@ shell_destroy(struct wl_client *client, struct wl_resource *res)
 {
 }
 
+static void
+shell_set_activate_region(struct wl_client *client, struct wl_resource *res,
+                         struct wl_resource *output, int x, int y,
+                         int width, int height)
+{
+       struct ivi_compositor *ivi = wl_resource_get_user_data(res);
+       struct weston_head *head = weston_head_from_resource(output);
+       struct weston_output *woutput = weston_head_get_output(head);
+       struct ivi_output *ioutput = to_ivi_output(woutput);
+
+       struct weston_geometry area = { .x = x, .y = y,
+                                       .width = width,
+                                       .height = height };
+       if (ivi->shell_client.ready)
+               return;
+
+       ioutput->area_activation = area;
+}
+
+
 static const struct agl_shell_interface agl_shell_implementation = {
-	.destroy = shell_destroy,
 	.ready = shell_ready,
 	.set_background = shell_set_background,
 	.set_panel = shell_set_panel,
 	.activate_app = shell_activate_app,
+	.destroy = shell_destroy,
+	.set_activate_region = shell_set_activate_region
 };
 
 static void
@@ -1659,7 +1680,7 @@ int
 ivi_shell_create_global(struct ivi_compositor *ivi)
 {
 	ivi->agl_shell = wl_global_create(ivi->compositor->wl_display,
-					  &agl_shell_interface, 3,
+					  &agl_shell_interface, 4,
 					  ivi, bind_agl_shell);
 	if (!ivi->agl_shell) {
 		weston_log("Failed to create wayland global.\n");
