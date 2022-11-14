@@ -225,19 +225,24 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	}
 
 	weston_view_set_output(view, woutput);
-	weston_view_set_position(view,
-				 woutput->x + output->area.x,
-				 woutput->y + output->area.y);
+
+	if (surf->role != IVI_SURFACE_ROLE_BACKGROUND)
+		weston_view_set_position(view,
+					 woutput->x + output->area.x,
+					 woutput->y + output->area.y);
 
 	view->is_mapped = true;
 	surf->mapped = true;
 	view->surface->is_mapped = true;
 
 	if (output->active) {
-		output->active->view->is_mapped = false;
-		output->active->view->surface->is_mapped = false;
+		/* keep the background surface mapped at all times */
+		if (output->active->role != IVI_SURFACE_ROLE_BACKGROUND) {
+			output->active->view->is_mapped = false;
+			output->active->view->surface->is_mapped = false;
 
-		weston_layer_entry_remove(&output->active->view->layer_link);
+			weston_layer_entry_remove(&output->active->view->layer_link);
+		}
 	}
 	output->previous_active = output->active;
 	output->active = surf;
@@ -850,6 +855,13 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 	if (weston_desktop_surface_get_maximized(dsurf) &&
 	    geom.width == output->area.width &&
 	    geom.height == output->area.height) {
+		ivi_layout_activate_complete(output, surf);
+		return;
+	}
+
+	/* the background surface is already "maximized" so we don't need to
+	 * add to the hidden layer */
+	if (surf->role == IVI_SURFACE_ROLE_BACKGROUND) {
 		ivi_layout_activate_complete(output, surf);
 		return;
 	}
