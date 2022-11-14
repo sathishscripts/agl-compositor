@@ -92,6 +92,16 @@ ivi_set_desktop_surface(struct ivi_surface *surface)
 }
 
 static void
+ivi_set_background_surface(struct ivi_surface *surface)
+{
+	struct ivi_compositor *ivi = surface->ivi;
+	assert(surface->role == IVI_SURFACE_ROLE_BACKGROUND);
+
+	wl_list_insert(&surface->ivi->surfaces, &surface->link);
+	agl_shell_desktop_advertise_application_id(ivi, surface);
+}
+
+static void
 ivi_set_desktop_surface_popup(struct ivi_surface *surface)
 {
 	struct ivi_compositor *ivi = surface->ivi;
@@ -1164,8 +1174,14 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	ivi->shell_client.ready = true;
 
 	wl_list_for_each(output, &ivi->outputs, link) {
-		if (output->background)
+		if (output->background &&
+		    output->background->role == IVI_SURFACE_ROLE_BACKGROUND) {
+			/* track the background surface role as a "regular"
+			 * surface so we can activate it */
+			ivi_set_background_surface(output->background);
 			remove_black_curtain(output);
+		}
+
 		ivi_layout_init(ivi, output);
 	}
 
