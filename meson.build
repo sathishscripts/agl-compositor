@@ -11,7 +11,7 @@ project('agl-compositor',
 )
 
 config_h = configuration_data()
-libweston_version = 'libweston-10'
+libweston_version = 'libweston-11'
 pkgconfig = import('pkgconfig')
 fs = import('fs')
 
@@ -156,7 +156,7 @@ libweston_dep = dependency(libweston_version)
 deps_libweston = [
   dependency('wayland-server'),
   libweston_dep,
-  dependency('libweston-desktop-10'),
+  dependency('libweston-desktop-11'),
   local_dep,
 ]
 
