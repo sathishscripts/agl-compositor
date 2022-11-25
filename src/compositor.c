@@ -487,8 +487,21 @@ head_disable(struct ivi_compositor *ivi, struct weston_head *head)
 
 	weston_head_detach(head);
 	if (count_heads(ivi_output->output) == 0) {
-		weston_output_disable(ivi_output->output);
+		if (ivi_output->output) {
+			/* ivi_output->output destruction may be deferred in
+			 * some cases (see drm_output_destroy()), so we need to
+			 * forcibly trigger the destruction callback now, or
+			 * otherwise would later access data that we are about
+			 * to free
+			 */
+			struct weston_output *save = ivi_output->output;
+
+			handle_output_destroy(&ivi_output->output_destroy, save);
+			weston_output_destroy(save);
+		}
 	}
+	wl_list_remove(&ivi_output->link);
+	free(ivi_output);
 }
 
 static struct weston_config_section *
