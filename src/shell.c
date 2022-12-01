@@ -802,7 +802,8 @@ ivi_shell_finalize(struct ivi_compositor *ivi)
 	weston_layer_fini(&ivi->popup);
 
 	wl_list_for_each(output, &ivi->outputs, link) {
-		if (output->fullscreen_view.fs->view) {
+		if (output->fullscreen_view.fs &&
+		    output->fullscreen_view.fs->view) {
 			weston_surface_destroy(output->fullscreen_view.fs->view->surface);
 			output->fullscreen_view.fs->view = NULL;
 		}
@@ -1097,9 +1098,10 @@ remove_black_curtain(struct ivi_output *output)
 {
 	struct weston_view *view;
 
-	if (!output &&
+	if ((!output &&
 	    !output->fullscreen_view.fs &&
-	    !output->fullscreen_view.fs->view) {
+	    !output->fullscreen_view.fs->view) ||
+	    !output->fullscreen_view.fs) {
 		weston_log("Output %s doesn't have a surface installed!\n", output->name);
 		return;
 	}
@@ -1126,7 +1128,8 @@ insert_black_curtain(struct ivi_output *output)
 
 	if ((!output &&
 	    !output->fullscreen_view.fs &&
-	    !output->fullscreen_view.fs->view) || !output->output) {
+	    !output->fullscreen_view.fs->view) || !output->output ||
+	    !output->fullscreen_view.fs) {
 		weston_log("Output %s doesn't have a surface installed!\n", output->name);
 		return;
 	}
