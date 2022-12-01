@@ -803,7 +803,7 @@ ivi_shell_finalize(struct ivi_compositor *ivi)
 
 	wl_list_for_each(output, &ivi->outputs, link) {
 		if (output->fullscreen_view.fs->view) {
-			weston_surface_destroy(output->fullscreen_view.fs->view->surface);
+			weston_surface_unref(output->fullscreen_view.fs->view->surface);
 			output->fullscreen_view.fs->view = NULL;
 		}
 	}
@@ -1049,41 +1049,72 @@ destroy_black_curtain_view(struct wl_listener *listener, void *data)
 }
 
 
+int
+curtain_get_label(struct weston_surface *surface, char *buf, size_t len)
+{
+	return snprintf(buf, len, "%s", "black curtain");
+}
+
+static void
+curtain_surface_committed(struct weston_surface *es, int32_t sx, int32_t sy)
+{
+
+}
+
+
 static void
 create_black_curtain_view(struct ivi_output *output)
 {
 	struct weston_surface *surface = NULL;
 	struct weston_view *view;
 	struct ivi_compositor *ivi = output->ivi;
-	struct weston_compositor *wc= ivi->compositor;
+	struct weston_compositor *ec = ivi->compositor;
 	struct weston_output *woutput = output->output;
+	struct weston_buffer_reference *buffer_ref;
 
 	if (!woutput)
 		return;
 
-	surface = weston_surface_create(wc);
+	surface = weston_surface_create(ec);
 	if (!surface)
 		return;
-	view = weston_view_create(surface);
-	if (!view) {
-		weston_surface_destroy(surface);
-		return;
-	}
 
-	weston_surface_set_color(surface, 0.0, 0.0, 0.0, 1);
+	view = weston_view_create(surface);
+	if (!view)
+		goto err_surface;
+
+	buffer_ref = weston_buffer_create_solid_rgba(ec, 0.0, 0.0, 0.0, 1.0);
+	if (buffer_ref == NULL)
+		goto err_view;
+
+	surface->committed = curtain_surface_committed;
+	surface->committed_private = NULL;
 	weston_surface_set_size(surface, woutput->width, woutput->height);
+
+	weston_surface_attach_solid(surface, buffer_ref,
+				    woutput->width, woutput->height);
+
+	weston_surface_set_label_func(surface, curtain_get_label);
 	weston_view_set_position(view, woutput->x, woutput->y);
 
 	output->fullscreen_view.fs = zalloc(sizeof(struct ivi_surface));
-	if (!output->fullscreen_view.fs) {
-		weston_surface_destroy(surface);
-		return;
-	}
-	output->fullscreen_view.fs->view = view;
+	if (!output->fullscreen_view.fs)
+		goto err_view;
 
-	output->fullscreen_view.fs_destroy.notify = destroy_black_curtain_view;
+	output->fullscreen_view.fs->view = view;
+	output->fullscreen_view.buffer_ref = buffer_ref;
+
+	output->fullscreen_view.fs_destroy.notify =
+		destroy_black_curtain_view;
 	wl_signal_add(&woutput->destroy_signal,
 		      &output->fullscreen_view.fs_destroy);
+
+	return;
+
+err_view:
+	weston_view_destroy(view);
+err_surface:
+	weston_surface_unref(surface);
 }
 
 bool

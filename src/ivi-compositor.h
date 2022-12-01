@@ -145,6 +145,7 @@ struct ivi_output {
 	struct fullscreen_view {
 		struct ivi_surface *fs;
 		struct wl_listener fs_destroy;
+		struct weston_buffer_reference *buffer_ref;
 	} fullscreen_view;
 
 	struct wl_listener output_destroy;

@@ -88,7 +88,8 @@ handle_output_destroy(struct wl_listener *listener, void *data)
 	assert(output->output == data);
 
 	if (output->fullscreen_view.fs->view) {
-		weston_surface_destroy(output->fullscreen_view.fs->view->surface);
+		weston_surface_unref(output->fullscreen_view.fs->view->surface);
+		weston_buffer_destroy_solid(output->fullscreen_view.buffer_ref);
 		output->fullscreen_view.fs->view = NULL;
 	}
 
@@ -130,7 +131,7 @@ ivi_output_configure_app_id(struct ivi_output *ivi_output)
 
 static struct ivi_output *
 ivi_ensure_output(struct ivi_compositor *ivi, char *name,
-		  struct weston_config_section *config)
+		  struct weston_config_section *config, struct weston_head *head)
 {
 	struct ivi_output *output = NULL;
 	wl_list_for_each(output, &ivi->outputs, link) {
@@ -150,7 +151,7 @@ ivi_ensure_output(struct ivi_compositor *ivi, char *name,
 	output->name = name;
 	output->config = config;
 
-	output->output = weston_compositor_create_output(ivi->compositor, name);
+	output->output = weston_compositor_create_output(ivi->compositor, head, name);
 	if (!output->output) {
 		free(output->name);
 		free(output);
@@ -395,7 +396,7 @@ try_attach_heads(struct ivi_output *output)
 {
 	size_t fail_len = 0;
 
-	for (size_t i = 0; i < output->add_len; ++i) {
+	for (size_t i = 1; i < output->add_len; i++) {
 		if (weston_output_attach_head(output->output, output->add[i]) < 0) {
 			struct weston_head *tmp = output->add[i];
 			memmove(&output->add[fail_len + 1], output->add[fail_len],
@@ -407,6 +408,39 @@ try_attach_heads(struct ivi_output *output)
 	return fail_len;
 }
 
+/* Place output exactly to the right of the most recently enabled output.
+ *
+ * Historically, we haven't given much thought to output placement,
+ * simply adding outputs in a horizontal line as they're enabled. This
+ * function simply sets an output's x coordinate to the right of the
+ * most recently enabled output, and its y to zero.
+ *
+ * If you're adding new calls to this function, you're also not giving
+ * much thought to output placement, so please consider carefully if
+ * it's really doing what you want.
+ *
+ * You especially don't want to use this for any code that won't
+ * immediately enable the passed output.
+ */
+static void
+weston_output_lazy_align(struct weston_output *output)
+{
+	struct weston_compositor *c;
+	struct weston_output *peer;
+	int next_x = 0;
+
+	/* Put this output to the right of the most recently enabled output */
+	c = output->compositor;
+	if (!wl_list_empty(&c->output_list)) {
+		peer = container_of(c->output_list.prev,
+				struct weston_output, link);
+		next_x = peer->x + peer->width;
+	}
+	output->x = next_x;
+	output->y = 0;
+}
+
+
 /*
  * Like try_attach_heads, this reorganizes the output's add array into a failed
  * and successful section.
@@ -417,6 +451,8 @@ try_enable_output(struct ivi_output *output, size_t i)
 {
 	for (; i < output->add_len; ++i) {
 		struct weston_head *head;
+
+		weston_output_lazy_align(output->output);
 
 		if (weston_output_enable(output->output) == 0)
 			break;
@@ -565,7 +601,7 @@ head_prepare_enable(struct ivi_compositor *ivi, struct weston_head *head)
 	if (!output_name)
 		return;
 
-	output = ivi_ensure_output(ivi, output_name, section);
+	output = ivi_ensure_output(ivi, output_name, section, head);
 	if (!output)
 		return;
 
