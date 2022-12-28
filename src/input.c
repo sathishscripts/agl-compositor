@@ -108,7 +108,7 @@ ivi_shell_seat_handle_pointer_focus(struct wl_listener *listener, void *data)
 
 	/* remove the POINTER capability such that the client will not install
 	 * a cursor surface */
-	if (shseat->hide_cursor && !shseat->new_caps_sent && resources) {
+	if (shseat->disable_cursor && !shseat->new_caps_sent && resources) {
 		caps &= ~WL_SEAT_CAPABILITY_POINTER;
 		wl_resource_for_each(resource, &pointer->seat->base_resource_list) {
 			wl_seat_send_capabilities(resource, caps);
@@ -137,7 +137,7 @@ ivi_shell_seat_handle_caps_changed(struct wl_listener *listener, void *data)
 }
 
 static struct ivi_shell_seat *
-ivi_shell_seat_create(struct weston_seat *seat, bool hide_cursor)
+ivi_shell_seat_create(struct weston_seat *seat, bool disable_cursor)
 {
 	struct ivi_shell_seat *shseat;
 
@@ -148,7 +148,7 @@ ivi_shell_seat_create(struct weston_seat *seat, bool hide_cursor)
 	}
 
 	shseat->seat = seat;
-	shseat->hide_cursor = hide_cursor;
+	shseat->disable_cursor = disable_cursor;
 	shseat->new_caps_sent = false;
 
 	shseat->seat_destroy_listener.notify = ivi_shell_seat_handle_destroy;
@@ -177,8 +177,8 @@ ivi_shell_handle_seat_created(struct wl_listener *listener, void *data)
 	struct ivi_compositor *ivi =
 		container_of(listener, struct ivi_compositor, seat_created_listener);
 
-	weston_log("Cursor is %s\n", ivi->hide_cursor ? "set" : "not set");
-	ivi_shell_seat_create(seat, ivi->hide_cursor);
+	weston_log("Cursor is %s\n", ivi->disable_cursor ? "set" : "not set");
+	ivi_shell_seat_create(seat, ivi->disable_cursor);
 }
 
 /*
@@ -203,9 +203,9 @@ ivi_seat_init(struct ivi_compositor *ivi)
 	struct weston_seat *seat;
 
 	wl_list_for_each(seat, &ec->seat_list, link) {
-		weston_log("Seat %p, cursor is %s\n", seat, ivi->hide_cursor ?
+		weston_log("Seat %p, cursor is %s\n", seat, ivi->disable_cursor ?
 				"set" : "not set");
-		ivi_shell_seat_create(seat, ivi->hide_cursor);
+		ivi_shell_seat_create(seat, ivi->disable_cursor);
 	}
 
 	ivi->seat_created_listener.notify = ivi_shell_handle_seat_created;

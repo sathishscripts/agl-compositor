@@ -1280,11 +1280,12 @@ choose_default_backend(void)
 }
 
 static int
-compositor_init_config(struct weston_compositor *compositor,
-		       struct weston_config *config)
+compositor_init_config(struct ivi_compositor *ivi)
 {
 	struct xkb_rule_names xkb_names;
 	struct weston_config_section *section;
+	struct weston_compositor *compositor = ivi->compositor;
+	struct weston_config *config = ivi->config;
 	int repaint_msec;
 	bool vt_switching;
 	bool require_input;
@@ -1316,6 +1317,11 @@ compositor_init_config(struct weston_compositor *compositor,
 
 	/* agl-compositor.ini [core] */
 	section = weston_config_get_section(config, "core", NULL, NULL);
+
+	weston_config_section_get_bool(section, "disable-cursor",
+				       &ivi->disable_cursor, false);
+	weston_config_section_get_bool(section, "activate-by-default",
+				       &ivi->activate_by_default, true);
 
 	weston_config_section_get_bool(section, "require-input", &require_input, true);
 	compositor->require_input = require_input;
@@ -1733,11 +1739,6 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 		if (!backend)
 			backend = choose_default_backend();
 	}
-	/* from [core] */
-	weston_config_section_get_bool(section, "hide-cursor",
-				       &ivi.hide_cursor, false);
-	weston_config_section_get_bool(section, "activate-by-default",
-				       &ivi.activate_by_default, true);
 
 	display = wl_display_create();
 	loop = wl_display_get_event_loop(display);
@@ -1779,7 +1780,7 @@ int wet_main(int argc, char *argv[], const struct weston_testsuite_data *test_da
 		goto error_signals;
 	}
 
-	if (compositor_init_config(ivi.compositor, ivi.config) < 0)
+	if (compositor_init_config(&ivi) < 0)
 		goto error_compositor;
 
 	if (load_backend(&ivi, backend, &argc, argv) < 0) {

@@ -58,7 +58,7 @@ struct ivi_compositor {
 	struct wl_listener heads_changed;
 
 	bool init_failed;
-	bool hide_cursor;
+	bool disable_cursor;
 	bool activate_by_default;
 	bool keep_pending_surfaces;
 
@@ -320,7 +320,7 @@ struct ivi_shell_seat {
 	struct weston_seat *seat;
 	struct weston_surface *focused_surface;
 
-	bool hide_cursor;
+	bool disable_cursor;
 	bool new_caps_sent;
 
 	struct wl_listener seat_destroy_listener;
