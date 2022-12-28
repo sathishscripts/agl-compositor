@@ -177,8 +177,8 @@ ivi_shell_handle_seat_created(struct wl_listener *listener, void *data)
 	struct ivi_compositor *ivi =
 		container_of(listener, struct ivi_compositor, seat_created_listener);
 
-	weston_log("Cursor is %s\n", ivi->hide_cursor ? "set" : "not set");
-	ivi_shell_seat_create(seat, ivi->hide_cursor);
+	weston_log("Cursor is %s\n", ivi->disable_cursor ? "disabled" : "not disabled");
+	ivi_shell_seat_create(seat, ivi->disable_cursor);
 }
 
 /*
@@ -203,9 +203,9 @@ ivi_seat_init(struct ivi_compositor *ivi)
 	struct weston_seat *seat;
 
 	wl_list_for_each(seat, &ec->seat_list, link) {
-		weston_log("Seat %p, cursor is %s\n", seat, ivi->hide_cursor ?
-				"set" : "not set");
-		ivi_shell_seat_create(seat, ivi->hide_cursor);
+		weston_log("Seat %p, cursor is %s\n", seat, ivi->disable_cursor ?
+				"not disabled" : "disabled");
+		ivi_shell_seat_create(seat, ivi->disable_cursor);
 	}
 
 	ivi->seat_created_listener.notify = ivi_shell_handle_seat_created;
