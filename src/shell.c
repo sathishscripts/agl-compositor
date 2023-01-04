@@ -1174,7 +1174,9 @@ shell_ready(struct wl_client *client, struct wl_resource *shell_res)
 	struct ivi_output *output;
 	struct ivi_surface *surface, *tmp;
 
-	if (ivi->shell_client.status == BOUND_FAILED) {
+	if (wl_resource_get_version(shell_res) >=
+	    AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	    ivi->shell_client.status == BOUND_FAILED) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound. "
@@ -1228,8 +1230,10 @@ shell_set_background(struct wl_client *client,
 	struct weston_desktop_surface *dsurface;
 	struct ivi_surface *surface;
 
-	if (ivi->shell_client.status == BOUND_FAILED ||
-	     ivi->shell_client.resource_ext == shell_res) {
+	if ((wl_resource_get_version(shell_res) >=
+	    AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	    ivi->shell_client.status == BOUND_FAILED) ||
+	    ivi->shell_client.resource_ext == shell_res) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound. "
@@ -1291,7 +1295,9 @@ shell_set_panel(struct wl_client *client,
 	struct ivi_surface **member;
 	int32_t width = 0, height = 0;
 
-	if (ivi->shell_client.status == BOUND_FAILED ||
+	if ((wl_resource_get_version(shell_res) >=
+	     AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	     ivi->shell_client.status == BOUND_FAILED) ||
 	    ivi->shell_client.resource_ext == shell_res) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
@@ -1408,7 +1414,9 @@ shell_activate_app(struct wl_client *client,
 	struct ivi_compositor *ivi = wl_resource_get_user_data(shell_res);
 	struct ivi_output *output = to_ivi_output(woutput);
 
-	if (ivi->shell_client.status == BOUND_FAILED) {
+	if (wl_resource_get_version(shell_res) >=
+	    AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	    ivi->shell_client.status == BOUND_FAILED) {
 		wl_resource_post_error(shell_res,
 				       WL_DISPLAY_ERROR_INVALID_OBJECT,
 				       "agl_shell has already been bound. "
@@ -1453,7 +1461,8 @@ shell_destroy(struct wl_client *client, struct wl_resource *res)
 	struct 	ivi_compositor *ivi = wl_resource_get_user_data(res);
 
 	/* reset status in case bind_fail was sent */
-	if (ivi->shell_client.status == BOUND_FAILED)
+	if (wl_resource_get_version(res) >= AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	    ivi->shell_client.status == BOUND_FAILED)
 		ivi->shell_client.status = BOUND_OK;
 }
 
@@ -1594,7 +1603,9 @@ unbind_agl_shell(struct wl_resource *resource)
 	ivi = wl_resource_get_user_data(resource);
 
 	/* reset status to allow other clients issue legit requests */
-	if (ivi->shell_client.status == BOUND_FAILED) {
+	if (wl_resource_get_version(resource) >=
+	    AGL_SHELL_BOUND_OK_SINCE_VERSION &&
+	    ivi->shell_client.status == BOUND_FAILED) {
 		ivi->shell_client.status = BOUND_OK;
 		return;
 	}
