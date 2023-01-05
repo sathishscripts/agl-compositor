@@ -1705,6 +1705,11 @@ bind_agl_shell(struct wl_client *client,
 		   but still do the assignment */
 		ivi->shell_client.status = BOUND_OK;
 		agl_shell_send_bound_ok(ivi->shell_client.resource);
+	} else {
+		/* fallback for just version 1 of the protocol */
+		wl_resource_set_implementation(resource, &agl_shell_implementation,
+					       ivi, unbind_agl_shell);
+		ivi->shell_client.resource = resource;
 	}
 }
 
