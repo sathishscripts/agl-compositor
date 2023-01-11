@@ -12,3 +12,10 @@ option(
         value: true,
         description: 'Build gRPC proxy which exposes some of the agl-shell protocol over a gRPC API'
 )
+
+option(
+        'waltham',
+        type: 'boolean',
+        value: false,
+        description: 'Build compositor with Waltham support. Disabled by default'
+)

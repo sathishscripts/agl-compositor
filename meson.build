@@ -239,7 +239,9 @@ if deps_remoting.length() == depnames.length()
   message('Found remoting depends, enabling remoting')
 endif
 
-if deps_waltham.length() == depnames_waltham.length() + depnames.length()
+if deps_waltham.length() == depnames_waltham.length() + depnames.length() and not get_option('waltham')
+  message('Found waltham depends, but waltham is deprecated')
+elif deps_waltham.length() == depnames_waltham.length() + depnames.length() and get_option('waltham')
   config_h.set('HAVE_WALTHAM', 1)
   message('Found waltham depends, enabling waltham')
 endif
