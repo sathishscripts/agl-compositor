@@ -1,6 +1,6 @@
 project('agl-compositor',
   'c','cpp',
-  version: '0.0.20',
+  version: '0.0.21',
   default_options: [
     'warning_level=3',
     'c_std=gnu99',
@@ -257,7 +257,7 @@ libexec_compositor = shared_library(
         dependencies: deps_libweston,
         install_dir: dir_module_agl_compositor,
         install: true,
-        version: '0.0.0',
+        version: meson.project_version(),
         soversion: 0
 )
 
