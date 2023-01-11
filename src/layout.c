@@ -315,6 +315,25 @@ ivi_layout_activate_complete(struct ivi_output *output,
 	shell_send_app_state(ivi, app_id, AGL_SHELL_APP_STATE_ACTIVATED);
 }
 
+static bool
+ivi_layout_find_output_with_app_id(const char *app_id, struct ivi_output *output)
+{
+	char *cur;
+	size_t app_id_len;
+
+	cur = output->app_ids;
+	app_id_len = strlen(app_id);
+
+	while ((cur = strstr(cur, app_id))) {
+		if ((cur[app_id_len] == ',' || cur[app_id_len] == '\0') &&
+	            (cur == output->app_ids || cur[-1] == ','))
+			return true;
+		cur++;
+	}
+
+	return false;
+}
+
 struct ivi_output *
 ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi)
 {
@@ -324,13 +343,12 @@ ivi_layout_find_with_app_id(const char *app_id, struct ivi_compositor *ivi)
 		return NULL;
 
 	wl_list_for_each(out, &ivi->outputs, link) {
-		if (!out->app_id)
+		if (!out->app_ids)
 			continue;
 
-		if (!strcmp(app_id, out->app_id))
+		if (ivi_layout_find_output_with_app_id(app_id, out))
 			return out;
 	}
-
 	return NULL;
 }
 
@@ -923,6 +941,9 @@ ivi_layout_activate_by_surf(struct ivi_output *output, struct ivi_surface *surf)
 	if (surf->role == IVI_SURFACE_ROLE_REMOTE) {
 		struct ivi_output *remote_output =
 			ivi_layout_find_with_app_id(app_id, ivi);
+
+		weston_log("Changed activation for app_id %s, type %s, on output %s\n", app_id,
+				ivi_layout_get_surface_role_name(surf), output->output->name);
 
 		/* if already active on a remote output do not
 		 * attempt to activate it again */

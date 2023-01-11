@@ -179,7 +179,7 @@ struct ivi_output {
 	size_t add_len;
 	struct weston_head *add[8];
 
-	char *app_id;
+	char *app_ids;
 	enum ivi_output_type type;
 };
 
