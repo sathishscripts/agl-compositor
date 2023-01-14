@@ -1611,6 +1611,8 @@ unbind_agl_shell(struct wl_resource *resource)
 	}
 
 	wl_list_for_each(output, &ivi->outputs, link) {
+		struct weston_geometry area = {};
+
 		/* reset the active surf if there's one present */
 		if (output->active) {
 			output->active->view->is_mapped = false;
@@ -1620,6 +1622,7 @@ unbind_agl_shell(struct wl_resource *resource)
 			output->active = NULL;
 		}
 
+		output->area_activation = area;
 		insert_black_curtain(output);
 	}
 
